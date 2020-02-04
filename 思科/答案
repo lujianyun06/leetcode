@@ -1,0 +1,34 @@
+import java.util.Scanner;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+/**
+ * 提取sip地址的头部
+ * 方法：用正则
+ * 用例：
+ *  1.%22hello%22world%22<sip:10000@172.16.130.42> -->hello%22world
+ *  2.%22%22hello%22world%22%22%22haha%22%22%22<sip:10000@172.16.130.42> -->hello%22world%22%22%22haha
+ *  3.hello22%world<sip:10000@172.16.130.42> -->hello22%world
+ */
+public class Solution {
+
+    public static void main(String[] args) {
+        Scanner sc = new Scanner(System.in);
+        String url = sc.next();
+        System.out.println(decode(url));
+    }
+
+    static String decode(String url){
+        if(url.isEmpty() || url.trim().equals("")){
+            return "";
+        }
+        url = url.trim();
+        String regex = "^(%22)*(.+(%22)*[^(%22)]+)(%22)*<sip:\\d+@\\d+\\.\\d+\\.\\d+\\.\\d+>$";
+        Pattern pattern = Pattern.compile(regex);
+        Matcher matcher = pattern.matcher(url);
+        if(matcher.find()) {
+            return matcher.group(2);
+        }
+        return "";
+    }
+}
