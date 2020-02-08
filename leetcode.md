@@ -26315,6 +26315,435 @@ qmax维护了窗口子数组arr[i..j]的最大值的更新结构，qmin维护了
 
 ```
 
+打印2个有序链表的公共部分：c-p34
+
+注意不是两个链表有公共节点，而是打印出它俩值相等的节点
+
+如果head1小于head2，head1往下移动
+如果head1大于head2，head2往下移动
+如果二者相等，打印值，然后head1和head2都往下移动
+head1和head2任意一个移动到null，则停止过程
+
+
+
+
+在单链表和双链表中删除倒数第k个节点，c-p35
+
+删除单链表的：双指针法：p1到达第k个节点后，p2设为第1个结点，然后二者一起往后走，当p1到末尾节点时，p2就是倒数第k个节点，并且过程中要一直维持p2的前驱节点（为了方便，最好弄个假头节点）
+
+删除双链表的：
+双指针法也可，不用设置前驱了，因为有pre域
+单指针法：一个指针一直到达末尾，然后往前走k-1次，就是倒数第k个节点
+
+
+删除链表的中间节点和a/b处的节点：c-p38
+
+删除中间节点：三个指针p1，p2和pre，p1一次走2步，p2一次走1步，pre始终是p2的前驱
+当p1走到末尾时，p2刚好在中间，执行删除即可。注意最好是有dummy节点，方便操作
+
+删除a/b处的节点：
+例如，有链表1->2->3->4->5 假设a/b的值为r
+如果r为0，则不删除任何节点
+如果r在区间(0, 1/5]上，删除节点1
+如果r在区间(1/5, 2/5]上，删除节点2
+如果r在区间(2/5, 3/5]上，删除节点3
+...
+如果r在区间(4/5, 1]上，删除节点5
+如果r大于1，不删除任何节点
+
+先遍历链表得出长度l，让a/b * l 向上取整得到要删除的节点编号，再顺着去删除即可
+
+
+```java
+    public ListNode removeNode(ListNode head, int a, int b){
+        if(head==null || a==0 || b==0 || a>b) return head;
+        ListNode dummy = new ListNode(-1);
+        dummy.next = head;
+        ListNode p = head;
+        int len = 0;
+        while(p!=null){
+            len++;
+            p = p.next;
+        }
+
+        int target = (int) Math.ceil(a*len / b);
+        ListNode pre = dummy;
+        p = head;
+
+        for(int i=1;i<target;i++){
+            pre = p;
+            p = p.next;
+        }
+        pre.next = p.next;
+        p = null;
+        return dummy.next;
+
+    }
+
+```
+
+翻转单向和双向链表：c-p40：
+要求空间复杂度是O(1)
+翻转单向链表，见j24-p142，
+    链表长为2时直接调换头尾即可
+    长大等于3时，要维持3个指针p1,p2,p3
+    循环 p2.next=p1, p1=p2,p2=p3,p3=p3.next，结束条件是p3!=null
+    最后再让p2.next=p1 ，很重要的一点是最后要让head的next为null。(head是起始链表的第一个节点)
+
+翻转双向链表：
+    双向链表的难点在于要维持两个域(pre和next)的正确
+    和单向链表相似，但要改部分：
+    循环：p2.next=p1,p1.pre=p2, p1=p2,p2=p3,p3=p3.next，结束条件是p3!=null
+    最后再让p2.pre=null, p2.next=p1, p1.pre=p2, head.next=null 
+    (head是起始链表的第一个节点）
+
+```java
+
+    class DListNode{
+        int val;
+        DListNode next;
+        DListNode pre;
+
+        DListNode(int x) {
+            val = x;
+        }
+    }
+
+
+    public DListNode reverse(DListNode head){
+        if(head==null || head.next==null) return head;
+        if(head.next.next == null){
+            DListNode tmp = head.next;
+            head.next = null;
+            head.pre = tmp;
+            tmp.next = head;
+            tmp.pre = null;
+            return tmp;
+        }
+
+        DListNode p1,p2,p3;
+        p1=head;
+        p2=head.next;
+        p3=head.next.next;
+        while (p3!=null){
+            p2.next = p1;
+            p1.pre = p2;
+
+            p1=p2;
+            p2=p3;
+            p3=p3.next;
+        }
+        p2.next=p1;
+        p2.pre=null;
+        p1.pre=p2;
+        head.next = null;
+        return p2;
+    }
+```
+
+
+反转部分单向链表：c-p42
+给定一个单向链表，及两个整数from和to，把from到to进行反转
+很简单，将第from-1个节点和to+1个节点记录下来，然后把from到to的链表反转，然后把from-1和to+1接上去即可。
+为了方便操作，先引入dummy
+
+```java
+    public ListNode reversePart(ListNode head, int from, int to){
+        ListNode dummy = new ListNode(-1);
+        if(head==null || to<=from) return head;
+        dummy.next = head;
+
+        ListNode fromPre=null, nextTo=null;
+        ListNode p = head;
+        int len = 0;
+        while (p!=null){
+            len++;
+            p = p.next;
+        }
+
+        if(from > len || to>len) return head;
+
+        p = dummy;
+        for (int i=0;i<=to;i++){
+            if(i==from-1){
+                fromPre = p;
+            }
+            p = p.next;
+        }
+        nextTo = p;
+
+        ListNode newTail = fromPre.next;
+        ListNode newHead = reverse(newTail);
+
+        newTail.next = nextTo;
+        fromPre.next = newHead;
+        return dummy.next;
+
+    }
+
+
+    ListNode reverse(ListNode head){
+        if(head==null || head.next==null) {
+            return head;
+        }
+        if(head.next.next==null){
+            ListNode tmp = head.next;
+            tmp.next = head;
+            head.next = null;
+        }
+
+        ListNode p1 = head;
+        ListNode p2 = head.next;
+        ListNode p3 = head.next.next;
+
+        while (p3!=null){
+            p2.next = p1;
+            p1=p2;
+            p2=p3;
+            p3=p3.next;
+        }
+        p2.next = p1;
+        head.next = null;
+        return p2;
+    }
+```
+
+环形单链表的约瑟夫问题：c-p43
+41个人绕成一个圈，从第一个人开始报数，报到m的就踢出环，从下一个人再开始报1，直到剩下一个人
+用环形单链表来描述这个过程。
+
+建一个环，然后过程很简单，不断更新计数，当计数为3时，删除当前节点，并把它的前后节点连起来
+最终直到只有一个节点，它的next是自己。
+
+可以引入dummy，但dummy不在环内，不参与循环过程
+利用循环，整个算法的复杂度是O(n * m) //n为节点个数，m为报数的值
+（每想删掉一个节点，都需要遍历m次，一共需要删除的节点数是n-1个，所以复杂度是O(n * m)）
+
+```java
+    public int josephus(int num, int m){
+        ListNode dummy = new ListNode(0);
+        ListNode n = dummy;
+        for(int i=1;i<=num;i++){
+            ListNode node = new ListNode(i);
+
+            if(i==num){
+                n.next = node;
+                node.next = dummy.next;
+            }else {
+                n.next = node;
+                n = node;
+            }
+        }
+
+        n = dummy.next;
+        ListNode pre = dummy;
+        int i=1;
+        while(n.next!=n){ //只剩下一个节点
+            if(i==m){
+                pre.next = n.next;
+                n = n.next;
+                i = 1;
+                continue;
+            }
+            pre = n;
+            n = n.next;
+            i++;
+        }
+        return n.val;
+    }
+```
+
+如果链表节点数n，想在时间复杂度为O(N)内完成解答，要如何实现？
+原问题花费时间多，是因为我们一开始不知道哪个节点会最后活下来，所以需要不断删除。
+例如1->2->3->4->5->1,从头结点开始编号，
+如果环形链表节点数为n，作如下定义：从环形链表头结点开始编号，头结点编号1，下一个编号2.。。最后一个节点编号n
+最后只剩下一个节点，这个幸存节点在只由自己组成的环中编号为1，记为Num(1)=1;
+在由2个节点组成额环中，这个幸存节点的编号是多少呢？假设是Num(2)
+。。。
+在由i个节点组成额环中，这个幸存节点的编号是多少呢？假设是Num(i)
+。。。
+在由n个节点组成额环中，这个幸存节点的编号是多少呢？假设是Num(n)
+
+我们已经知道Num(1)=1,如果再确定Num(i-1)和Num(i)的关系，就可以递归求出了
+
+1.假设现在圈中共有i个节点，从头结点开始报数，报1的是编号1的节点，报2的是编号2的节点，假设报A的是编号B的节点，则A和B关系如下：
+    A    B
+    1    1
+    2    2
+    i    i
+    i+1  1
+    i+2  2
+    ...
+    2i   i
+    2i+1 1
+    ...
+举个例子，环形链表中有3个节点，报1的是编号1，报2的是编号2，报3的是编号3，报4的是编号1，
+报5的是编号2，报6的是编号3，报7的是编号1，。。
+
+A与B的关系可写成 B=(A—1)%i+1 。该表达式不唯一，总之只要找到报的数（A）和当前环中的编号节点（B）的关系即可。
+
+2.如果编号为2的节点被删除，环的节点数自然从i变成i-1.那么原来在大小为i的环中，每个节点的编号会发生什么呢？
+
+
+    环大小为i的每个节点编号    删掉编号s的节点后，环大小为i-1的每个节点的编号
+       ...                      ...
+       s-2                      i-2
+       s-1                      i-1
+       s                        ----(无编号，因为被删掉了)
+       s+1                       1
+       s+2                       2
+
+假设环大小为i的每个节点编号即为old，环大小为i-1的每个节点编号记为new，则old与new的关系表达式为：
+old=(new+s-1)%i+1 (这个也不唯一，能满足即可) 
+
+3.因为每次都是报数到m的节点被杀，根据步骤1的表达式B=（A-1）%i+1, A=m。被杀的节点编号为(m-1)%i+1, 即s=(m-1)%i+1，代入到步骤2中的表达式中，即为old=(new+(m-1)%i+1)%i+1,经过化简为：
+old=(new+m-1)%i+1。至此，我们终于得到了Num(i-1)-new 和 Num(i)-old 的关系，且这个关系只和m与i的值有关。
+
+整个解法总结如下：
+1.遍历链表，求链表的节点个数记为n，时间复杂度为O(N),
+2.根据n和m的值，还有上面分析的Num(i-1)和Num(i)的关系，递归求生存节点的编号，递归为N层，所以时间复杂度为O(N)
+3.最后根据生存节点的编号，遍历链表找到该节点，时间复杂度为O(N)
+4.整个过程结束，总的时间复杂度是O(N)
+
+核心代码：getLive：递归，根据下一次环中幸存者的编号计算出它在此次环中的编号
+public int getLive(int len, int m){
+    if(i==1) return 1;
+    return (getLive(len-1, m)+m-1)%len+1;
+}
+
+
+```java
+public ListNode josephuKill2(Node head, int m){
+    if(head==null || head.next==head || m<1){
+        return head;
+    }
+    //注意这里的head不是假头结点，而是环中的头结点
+    ListNode cur = head.next;
+    int tmp = 1;
+    while(cur!=head){
+        tmp++;
+        cur = cur.next;
+    }
+    tmp = getLive(tmp, m);
+    while(--tmp!=0){
+        head = head.next;
+    }
+    head.next = head;
+    return head;
+}
+
+public int getLive(int len, int m){
+    if(i==1) return 1;
+    return (getLive(len-1, m)+m-1)%len+1;
+}
+```
+
+
+回文链表：c-p48.见：234
+
+方法一：先把链表值全压入栈，然后逐个出栈与原链表逐一比对
+方法二：把原链表分成两部分，前一半不变，后一半翻转，然后两个指针分别从头部和中间(后一半的头部)逐一比较
+
+
+
+将单向链表按某值划分成左边小，中间相等，右边大的形式：c-p52：
+很简单，设置3个指针假头，遍历原链表，第一个后面接比该值小的，第二个后面接和它等的，第三个后面接比它大的，最后再把3个链表从第二个节点开始（去除假头）连起来即可,这样能保证顺序也不变，sO(1), tO(n)
+
+需要注意的是，在往3个链上接节点的时候，要把当前节点的next置空，避免链一直那么长，所以要提前把next保存起来以便遍历
+```java
+
+    public ListNode listPartition(ListNode head, int pivot){
+        if(head==null) return null;
+        ListNode dummy1 = new ListNode(-1);
+        ListNode dummy2 = new ListNode(-2);
+        ListNode dummy3 = new ListNode(-3);
+
+        ListNode p1=dummy1,p2=dummy2,p3=dummy3, p=head;
+
+        while(p!=null){
+            //提前把next保存，然后每把一个节点接到相应的链上，就要把它的next置空。
+            ListNode tmp = p.next;
+            p.next = null;
+            if(p.val<pivot){
+                p1.next=p;
+                p1 = p1.next;
+            }else if(p.val==pivot){
+                p2.next = p;
+                p2 = p2.next;
+            }else{
+                p3.next = p;
+                p3 = p3.next;
+            }
+            p = tmp;
+        }
+
+        ListNode dummy = new ListNode(0);
+        ListNode node = dummy;
+        ListNode n = dummy1.next;
+        while(n!=null){
+            node.next = n;
+            n = n.next;
+            node = node.next;
+        }
+        n = dummy2.next;
+        while(n!=null){
+            node.next = n;
+            n = n.next;
+            node = node.next;
+        }
+        n = dummy3.next;
+        while(n!=null){
+            node.next = n;
+            n = n.next;
+            node = node.next;
+        }
+        return dummy.next;
+
+    }
+```
+
+复制含有随机指针节点的链表：c-p56
+：138, j35-p187
+sO(n)很简单，把原始节点存入list1，把新的节点也存入一个list2，按照原始节点random域指向节点在list1中的索引，得到其对应的新节点的random域应该指向list2中的哪个节点
+
+sO(1):复制的节点在原节点后面接上，即oriNode.next = newNode; 先把整个链表复制一遍，这样链表就变成：
+o1->n1->o2->n2->o3->n3, 然后遍历奇数号的节点（即原节点）
+让其next(即它对应的新节点)的next指向它的random的next(即它的random的新节点)
+即： cur.next.random = cur.random.next;
+然后再分离奇数号和偶数号的节点，形成两个链表
+
+```java
+    public ListNode copyListWithRand(ListNode head){
+        if(head==null) return null;
+        ListNode n = head;
+        while(n!=null){
+            ListNode tmp = n.next;
+            n.next = new ListNode(n.val);
+            n.next.next = tmp;
+            n = tmp;
+        }
+
+        n = head;
+        while(n!=null){
+            if(n.random!=null)
+                n.next.random = n.random.next;
+            n = n.next.next;
+        }
+
+        n = head;
+        ListNode newHead = head.next;
+        ListNode nn = newHead;
+        while(n!=null){
+            n.next = n.next.next;
+            if(nn.next!=null)
+                nn.next = nn.next.next;
+
+            n = n.next;
+            nn = nn.next;
+        }
+        return newHead;
+    }
+```
 
 
 
@@ -26331,26 +26760,50 @@ qmax维护了窗口子数组arr[i..j]的最大值的更新结构，qmin维护了
 
 
 
+********************** 多线程题 **************************
+
+2个线程交替打印1到10
+```java
+
+    void alternatePrint(){
+        Semaphore s1 = new Semaphore(1);
+        Semaphore s2 = new Semaphore(0);
+        Thread t1 = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                for (int i=1;i<=10;i+=2){
+                    try {
+                        s1.acquire();
+                        System.out.println("t1:"+i);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }finally {
+                        s2.release();
+                    }
+                }
+            }
+        });
+        t1.start();
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+        Thread t2 = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                for (int i=2;i<=10;i+=2){
+                    try {
+                        s2.acquire();
+                        System.out.println("t2:"+i);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }finally {
+                        s1.release();
+                    }
+                }
+            }
+        });
+        t2.start();
+    }
+```
 
 
 
