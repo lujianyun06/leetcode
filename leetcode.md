@@ -26721,6 +26721,7 @@ o1->n1->o2->n2->o3->n3, 然后遍历奇数号的节点（即原节点）
             n.next = new ListNode(n.val);
             n.next.next = tmp;
             n = tmp;
+            return tmp;
         }
 
         n = head;
@@ -26744,6 +26745,537 @@ o1->n1->o2->n2->o3->n3, 然后遍历奇数号的节点（即原节点）
         return newHead;
     }
 ```
+
+两个链表相加生成链表，节点的值在0-9之间。如9->3->7 和 6->3相加 新链表是 1->0->0->0：c-p59
+用sO(n)很简单，把两个链表分别压入栈中，弹栈相加，记录进位，和的个位新做一个链表，然后把结果链表翻转即可
+
+用sO(1)
+先把两个链表翻转，然后逐节点加和，记录进位，和的个位新做一个链表，然后把结果链表翻转即可
+注意，一定要记得把dummy从原链表中断开，否则也就被翻转掉了
+
+
+```java
+
+    public ListNode addList(ListNode head1, ListNode head2){
+        ListNode iHead1 = reverse(head1);
+        ListNode iHead2 = reverse(head2);
+        ListNode dummy = new ListNode(0);
+        ListNode n = dummy;
+        ListNode p1=iHead1, p2=iHead2;
+        int c = 0;
+        while(p1!=null || p2!=null){
+            int i1 = p1==null?0:p1.val;
+            int i2 = p2==null?0:p2.val;
+
+            int cur = (i1+i2+c)%10;
+            c = (i1+i2+c)/10;
+            n.next = new ListNode(cur);
+            n = n.next;
+            if(p1!=null)p1=p1.next;
+            if(p2!=null)p2=p2.next;
+        }
+
+        if(c>0){
+            n.next = new ListNode(c);
+        }
+        ListNode head = dummy.next;
+        dummy.next = null; 
+        //这一步很重要，一定要记得把dummy从原链表中断开，否则也就被翻转掉了
+        reverse(iHead1);
+        reverse(iHead2);
+
+        return reverse(head);
+    }
+
+
+    ListNode reverse(ListNode head){
+        if(head==null || head.next==null) {
+            return head;
+        }
+        if(head.next.next==null){
+            ListNode tmp = head.next;
+            tmp.next = head;
+            head.next = null;
+            return tmp;
+        }
+
+        ListNode p1 = head;
+        ListNode p2 = head.next;
+        ListNode p3 = head.next.next;
+
+        while (p3!=null){
+            p2.next = p1;
+            p1=p2;
+            p2=p3;
+            p3=p3.next;
+        }
+        p2.next = p1;
+        head.next = null;
+        return p2;
+    }
+```
+
+两个单链表相交的一系列问题： c-p62
+两个单链表，可能有环也可能无环，给定两个头结点head1和head2，两个链表可能相交也可能不相交，实现一个函数，如果相交，返回相交的第一个节点，如果不相交，返回null
+要求：如果链表1长度为N，链表2长度为M，时间复杂度要求O(M+N), 额外空间复杂度请达到O(1)
+
+如何判断一个链表有环是关键，有的单链表的环不是全环，而是部分有环，如 1->2->3->2..
+如何判断这种环是难点
+
+用龟兔赛跑算法，p1每次跑1步，p2每次跑2步，如果p2为了null，则说明没环，一旦p2和p1相等了，说明有环，p1返回链表头，p1，p2都一步一步往前走，最先重合的点是环入口
+
+链表2也用上述办法，但过程中多加一步判断当前节点是否是链1的环入口，如果有节点是环入口，说明链1和链2的环是重合的。但二者的首个重合点不一定是环入口，而且二者的入环点可能不同，此时要算出环的长度，再算出链1链2分别环外的长度，让两个节点分别从距环相同距离的节点开始往前走，如果走到环上了还不相同，说明入环点不一样，返回任意一个入环点都可
+
+如果一个有环一个没环，一定不相交
+
+如果两个都没环，则p1先走l1再走l2，p2先走l2再走l2，第一次相遇的点就是第一个相交的节点。如果二者都走过了两个链表长，始终不相等，则说明不相交
+
+```java
+
+
+    public ListNode getCrossNode(ListNode head1, ListNode head2){
+        if(head1==null || head2==null) return null;
+        ListNode entrance1 = getCycleEntrance(head1);
+        ListNode entrance2 = getCycleEntrance(head2);
+        if((entrance1==null && entrance2!=null) || (entrance2==null && entrance1!=null)){
+            return null;
+        }else if(entrance1==null && entrance2==null){
+            ListNode p1 = head1;
+            ListNode p2 = head2;
+            int len1 = 1;
+            int len2 = 1;
+            while(p1!=null){
+                p1=p1.next;
+                len1++;
+            }
+            while(p2!=null){
+                p2=p2.next;
+                len2++;
+            }
+            p1=head1;
+            p2=head2;
+            int step=1;
+            while(p1!=p2 || step>=len1+len2){
+                p1=p1.next;
+                if(p1==null){
+                    p1=head2;
+                }
+                p2=p2.next;
+                if(p2==null){
+                    p2=head1;
+                }
+                step++;
+            }
+            return p1==p2?p1:null;
+        }else{
+            //如果两个环没有交点
+            if(!isCycleCross(entrance1, entrance2)) return null;
+
+            //就算entrance1==entrance2，也不能确保他俩就算第一个交点，或许交点在环外
+            int outlen1 = getOutLength(head1, entrance1);
+            int outlen2 = getOutLength(head2, entrance2);
+            ListNode p1=head1, p2=head2;
+            if(outlen1>outlen2){
+                while(outlen1!=outlen2){
+                    outlen1--;
+                    p1=p1.next;
+                }
+            }else if(outlen1<outlen2){
+                while(outlen1!=outlen2){
+                    outlen2--;
+                    p2=p2.next;
+                }
+            }
+            //环长+环外最小长，如果
+
+
+            //此时p1,p2距离环相等,如果走到环了二者还不等，说明两条链进入环的点不一样，则无所谓第一个交点，返回第一个入环点即可.
+            // 否则若在返回它们俩第一次相等时的位置即可
+            while(p1!=p2 && p1!=entrance1){
+                p1=p1.next;
+                p2=p2.next;
+            }
+            return p1;
+
+
+        }
+    }
+
+    //获得环外的长度
+    int getOutLength(ListNode head, ListNode entrance){
+        if(head==entrance) return 0;
+        int len = 0;
+        ListNode n = head;
+        while(n!=entrance){
+            n = n.next;
+            len++;
+        }
+        return len;
+
+    }
+
+    //传入两个环，看是否有交点
+    public boolean isCycleCross(ListNode head1, ListNode head2){
+        if(head1==head2) return true;
+        ListNode n = head1;
+        do{
+            n=n.next;
+        }while(n!=head2 && n!=head1);
+
+        if(n==head2) return true;
+        else return false;
+
+
+    }
+
+    //传入环中任意一个节点
+    public int getCycleLength(ListNode head){
+        ListNode n = head;
+        int len = 0;
+        do{
+            n = n.next;
+            len++;
+
+        }while(n!=head);
+        return len;
+    }
+
+
+    //如果返回null，说明没环，否则返回环的入口
+    public ListNode getCycleEntrance(ListNode head){
+        ListNode p1 = head;
+        ListNode p2 = head;
+
+        do{
+            p1 = p1.next;
+            p2 = p2.next;
+            if(p2!=null){
+                p2=p2.next;
+            }
+
+        }while (!(p2==null || p1==p2));
+        if(p2==null) return null;
+
+        p1=head;
+        while(p1!=p2){
+            p1=p1.next;
+            p2=p2.next;
+        }
+        return p1;
+    }
+
+```
+
+将单链表的每k个节点之间逆序：c-p68
+
+给一个单链表，实现调整单链表的函数，使得每K个节点之间逆序，如果最后不够K个节点一组，则不调整最后几个节点，例如：1-2-3-4-5-6-7-8   K=3   调整为 3-2-1-6-5-4-7-8   7、8不调整，因为不够1组
+
+用2个节点，h来表示当前要翻转的子链的头结点，n顺着往下遍历，
+用一个计数器，每经过k个点，每当计数器为K-1时，就翻转h到n的节点，然后k恢复为0，h调为翻转前n的next，n也调为翻转前n的next
+
+```java
+
+    ListNode reverseKGroup(ListNode head, int k) {
+        ListNode n = head;
+        ListNode h = head;
+        ListNode newHead = null;
+        ListNode preTail = null;
+        int c = 0;
+        while (n != null) {
+            ListNode tmp = n.next;
+            if (c == k - 1) {
+                n.next = null;
+                reverse(h);
+                if (h == head) {
+                    newHead = n;
+                }
+                if (preTail != null) {
+                    preTail.next = n;
+                }
+                preTail = h;
+                h.next = tmp;
+                h = tmp;
+                n = tmp;
+                c = 0;
+            } else {
+                n = tmp;
+                c++;
+            }
+        }
+        return newHead == null ? head : newHead;
+    }
+
+    ListNode reverse(ListNode head){
+        if(head==null || head.next==null) {
+            return head;
+        }
+        if(head.next.next==null){
+            ListNode tmp = head.next;
+            tmp.next = head;
+            head.next = null;
+            return tmp;
+        }
+
+        ListNode p1 = head;
+        ListNode p2 = head.next;
+        ListNode p3 = head.next.next;
+
+        while (p3!=null){
+            p2.next = p1;
+            p1=p2;
+            p2=p3;
+            p3=p3.next;
+        }
+        p2.next = p1;
+        head.next = null;
+        return p2;
+    }
+
+```
+
+删除无序单链表中值重复出现的节点：c-p71
+例如 1-2-3-3-4-4-2-1-1  删除后为 1-2-3-4
+如果空间复杂度为O(N),时间复杂度是O(N)的话很简单，每遍历一个节点，尝试把其值放入hashset中，如果出现过该值则删除该节点
+
+如果空间复杂度为O(1),时间复杂度是O(N^2)，则设定一个节点p等于当前节点，n为p.next, n往后遍历，只要出现等于这个值的节点，都删掉（所以还要保留pre），然后p继续往下走一个，n继续为p.next，继续。
+最后，head一定还是head，因为是从第二个节点才开始删的
+
+```java
+    public ListNode removeDuplicates(ListNode head){
+        ListNode p = head;
+        ListNode n = head.next;
+        ListNode pre = head;
+        while(p!=null){
+            n = p.next;
+            pre = p;
+            while(n!=null){
+                if(n.val==p.val){
+                    pre.next = n.next;
+                    n = n.next;
+                }else{
+                    pre = n;
+                    n = n.next;
+                }
+            }
+            p = p.next;
+        }
+        return head;
+    }
+```
+
+单链表中删除指定值的节点：c-p73
+很简单，保存一个pre，一个cur，遇到cur等于指定值，直接删了就行，tO(n)+sO(1)
+```java
+    public ListNode removeNode(ListNode head, int num){
+        ListNode dummy = new ListNode(0);
+        dummy.next = head;
+        ListNode cur = head;
+        ListNode pre = dummy;
+        while(cur!=null){
+            if(cur.val==num){
+                pre.next = cur.next;
+                cur = cur.next;
+            }else{
+                pre = cur;
+                cur = cur.next;
+            }
+        }
+        return dummy.next;
+    }
+```
+
+将二叉搜索树转成有序的双向链表 c-p74
+二叉搜索树的中序遍历就是顺序，中序遍历即可，维持一个前一个遍历过的节点用来保持连接
+但要注意的是，如果引入假头节点，在最后返回的时候要断开假头结点和链表之间的联系（主要是head.pre）
+
+```java
+    public ListNode convertTree2List(TreeNode root){
+        ListNode dummy = new ListNode(0);
+        TreeNode p = root;
+        ListNode pre = dummy;
+        Stack<TreeNode> stk = new Stack<>();
+        while(p!=null || !stk.isEmpty()){
+            if(p!=null){
+                stk.push(p);
+                p=p.left;
+            }else{
+                p = stk.pop();
+                ListNode t = new ListNode(p.val);
+                pre.next = t;
+                t.pre = pre;
+                pre = t;
+                p = p.right;
+            }
+        }
+        ListNode head = dummy.next;
+        head.pre = null;
+        return head;
+    }
+```
+
+单链表的选择排序：c-p79
+要求sO(1),选择排序就是从未排序的部分找出最小值，然后放在排好序部分的尾部。每次都遍历未排序序列，挑出其中的最小值单独接在已排序序列的最后，并且把它从未排序链表中删除。而且删除的过程要保证链表在结构上不断开
+
+
+#（注意区别插入排序和选择排序）：
+插入排序是直接从未排序序列中取首元素，然后逐个与已排序的比，插入。
+选择排序是从未排序的序列中选出最小的，直接插入到已排序序列的最后
+
+```java
+    public ListNode selectionSort(ListNode head) {
+        ListNode dummy = new ListNode(0);
+        dummy.next = head;
+
+        ListNode inode = dummy.next;
+        ListNode newDummy = new ListNode(0);
+        ListNode n = newDummy;
+        while (inode != null) {
+
+            ListNode min = inode;
+            ListNode minPre = dummy;
+
+            ListNode jnode = inode.next;
+            ListNode jpre = inode;
+            while (jnode != null) {
+                if (jnode.val < min.val) {
+                    min = jnode;
+                    minPre = jpre;
+                }
+                jpre = jnode;
+                jnode = jnode.next;
+
+            }
+
+            minPre.next = min.next;
+            n.next = min;
+            n = n.next;
+            n.next = null;
+
+            inode = dummy.next;
+
+        }
+        return newDummy.next;
+    }
+```
+
+只给定一个节点，以O(1)方式删除该节点的方法存在的问题：c-p82： 237的问题
+1.这样的方式无法删除最后一个节点（继无法让倒数第二个节点的next变成null）
+2.本质上部署删除node节点，工厂上一个节点可能代表很复杂的结构，节点值的复制很复杂，或者根本就禁止改变节点的值
+
+
+向有序的环形单链表中插入新节点：c-p82
+
+一个环形链表从头结点head开始不降序，最后节点指回头结点，给一个num，将其生成新节点插入到链表中
+
+无限循环遍历链表，遍历到第一个比它大的节点处，插在前面。
+有区别的两点：
+如果要插在最后一个节点之前，要判断的是如果两边都比他小或等，且后面是head时插入到head前
+如果要插在第一个节点前，则要判断的是如果两边都比他大或等，且后面是head时插入到head前
+
+一定要考虑等的情况，不然可能陷入死循环
+
+最后返回的时候，可以考虑遍历一遍
+
+```java
+    public ListNode insertCycle(ListNode head, int num){
+        ListNode n = new ListNode(num);
+        if(head==null){
+            n.next = n;
+            return n;
+        }
+
+        ListNode cur = head.next;
+        ListNode pre = head;
+        while(true){
+            if(cur.val>=num && num<=pre.val){
+                pre.next = n;
+                n.next = cur;
+                return head.val>n.val?n:head;
+            }
+            if(pre.val<=num && cur.val<=num && cur==head){
+                pre.next = n;
+                n.next = cur;
+                return head;
+            }
+            if(pre.val>num && cur.val>num && cur==head){
+                pre.next = n;
+                n.next = cur;
+                break;
+            }
+
+            pre = cur;
+            cur = cur.next;
+        }
+        return head;
+    }
+```
+
+合并两个有序的单链表：c-p84
+很简单，两个指针p1，p2分别指向两个链表的头，哪个小就接在新链表后面，且指针往后挪一位，直到一个链表空了，把剩下的链表都接在新链表后面即可
+
+```java
+    public ListNode merge(ListNode head1, ListNode head2){
+        ListNode p1 = head1;
+        ListNode p2 = head2;
+        ListNode dummy = new ListNode(0);
+        ListNode n = dummy;
+        while(p1!=null && p2!=null){
+            if(p1.val<p2.val){
+                n.next = p1;
+                p1 = p1.next;
+            }else{
+                n.next = p2;
+                p2 = p2.next;
+            }
+            n = n.next;
+        }
+        n.next = p1==null?p2:p1;
+        return dummy.next;
+    }
+```
+
+
+给定一个单链表头部节点head，链表长度N，如果N为奇数，那么前N/2算左半区，后N/2为右半区；如果N为奇数，那么前N/2算左半区，后N/2+1为右半区；左半区是L1->L2->... 右半区是R1->R2->...请将单链表调整为 L1->R1->L2->R2...的形式：c-p86
+
+轮流把两个半区的节点接到新链表上。p1到左半区头，p2为右半区头，设立一个flag表示该接左还是右的节点了，接上后，p1/p2往后移一位， flag取反， 新链表的尾节点=其next... 循环直到p1,p2都是null
+
+```java
+    public void relocate(ListNode head){
+        ListNode n = head;
+        ListNode p1= head;
+        int len = 0;
+        while(n!=null){
+            n=n.next;
+            len++;
+        }
+        ListNode p2 = head;
+        for(int i=0;i<len/2;i++){
+            p2=p2.next;
+        }
+
+        ListNode dummy = new ListNode(0);
+        n = dummy;
+        boolean flag = true;
+        while(p1!=null && p2!=null){
+            if(flag){
+                n.next = p1;
+                p1 = p1.next;
+            }else{
+                n.next = p2;
+                p2 = p2.next;
+            }
+            flag = !flag;
+            n = n.next;
+        }
+    }
+```
+
+
+
+
+
+
+
 
 
 
