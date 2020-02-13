@@ -16529,6 +16529,8 @@ Could you devise a constant space solution?
 记录这两个值
 再中序遍历一遍树，当遍历到位置不对的两个节点时，替换其值为另一个即可（如果要替换节点，还要前序遍历一遍找到它们两个各自的父节点并保存下来，交换各自的父节点和子节点）
 
+注意这道题是只交换两个节点值，不交换节点，所以算简单题
+
 ```java
 /**
  * Definition for a binary tree node.
@@ -22250,6 +22252,7 @@ Example 3:
 Input: "9,#,#,1"
 Output: false
 
+方法一：
 序列化二叉树的一种方法是使用前序遍历。当遇到非空节点时，我们记录该节点的值。如果它是一个空节点，我们使用一个标记值来记录，比如#。
 例如，上面的二叉树可以序列化为字符串“9、3、4、#、#、1、#、#、2、#、6、#、#”，其中#表示空节点。
 给定一串逗号分隔的值，验证它是否是正确的二叉树的前序遍历序列化。在不重构树的情况下找到算法。
@@ -22262,7 +22265,13 @@ Output: false
 若当前节点是#，让栈顶元素的为false的域设为true，若当前栈为空则不满足，#的节点不入栈。
 遍历完后，弹出所有栈中的元素，若栈中有左右孩子还没找到的节点，返回false。
 
+
+方法二：借鉴c-p103的方法（更好）
+直接把原序列放入队列中，然后进行前序遍历的二叉树的构建，每到要构建节点则出队一个元素，当构建到一个节点时队列中的元素不够了，则说明不符合，直接跳出返回。 因为构建时返回的类型是节点类型，所以要设置一个全局的变量flag，当元素不够时，设置其为false。并且在构建完最后要判断一下队列是否为空，如果不为空说明没用完节点。 最后返回 flag && 队列是否为空
+
+
 ```java
+//方法一，很麻烦
 class Solution {
 
     class Node{
@@ -22319,6 +22328,50 @@ class Solution {
 
         //若栈还不为空，则不满足。
         return stk.isEmpty();
+    }
+}
+
+
+//方法二：
+class Solution {
+    class TreeNode {
+        int val;
+        TreeNode left;
+        TreeNode right;
+        TreeNode parent;
+
+        TreeNode(int x) {
+            val = x;
+        }
+    }
+
+    boolean canBuild = true;
+    public boolean isValidSerialization(String preorder) {
+        if(preorder==null || preorder.length()==0) return false;
+        String[] strs = preorder.split(",");
+        Queue<String> queue = new LinkedList<>();
+        for(int i=0;i<strs.length;i++){
+            queue.offer(strs[i]);
+        }
+        nodeBuild(queue);
+        return canBuild && queue.isEmpty();
+
+
+    }
+
+    public TreeNode nodeBuild(Queue<String> queue){
+        if(queue.isEmpty()){
+            canBuild = false;
+            return null;
+        }
+        String cur  = queue.poll();
+        if(cur.equals("#")){
+            return null;
+        }
+        TreeNode n = new TreeNode(Integer.valueOf(cur));
+        n.left = nodeBuild(queue);
+        n.right = nodeBuild(queue);
+        return n;
     }
 }
 
@@ -27269,6 +27322,867 @@ o1->n1->o2->n2->o3->n3, 然后遍历奇数号的节点（即原节点）
         }
     }
 ```
+
+使用递归方法和非递归方法完成二叉树的前序，中序，后序遍历
+递归方法很简单，不用多说
+主要再写一遍非递归：
+```java
+//前序
+public List preTraversal(TreeNode root){
+    ArrayList<Integer> list = new ArrayList<>();
+    Stack<TreeNode> stk = new Stack<>();
+    TreeNode p = root;
+    stk.push(p)
+    while(!stk.isEmpty()){
+        p = stk.pop();
+        list.add(p.val);
+        if(p.right!=null )stk.push(p.right);
+        if(p.left!=null )st.push(p.left);
+    }
+    return list;
+}
+
+
+//中序
+public List midTraversal(TreeNode root){
+    ArrayList<Integer> list = new ArrayList<>();
+    Stack<TreeNode> stk = new Stack<>();
+    TreeNode p = root;
+    while(!stk.isEmpty() || p!=null){
+        if(p!=null){
+            stk.push(p);
+            p=p.left;
+        }else{
+            p = stk.pop();
+            list.add(p.val);
+            p = p.right;
+        }
+    }
+    return list;
+}
+
+
+//后序
+    public List postTraversal(TreeNode root){
+        ArrayList<Integer> list = new ArrayList<>();
+        Stack<TreeNode> stk = new Stack<>();
+        TreeNode p = root;
+        TreeNode pre = null;
+        while(!stk.isEmpty() || p!=null){
+            while(p!=null){
+                stk.push(p);
+                p = p.left;
+            }
+            p = stk.peek();
+            if(p.right==pre || p.right==null){
+                p = stk.pop();
+                list.add(p.val);
+                pre = p;
+                p = null;
+            }else{
+                p = p.right;
+            }
+        }
+        return list;
+    }
+```
+
+打印二叉树的边界节点：c-p96
+按照两种标准打印：
+标准1：
+1.头结点为边界节点
+2.叶节点为边界节点
+3.如果节点在其所在的层中是最左或者最右的，那么也是边界节点
+标准2：
+1.头结点为边界节点
+2.叶节点为边界节点
+3.树左边界延伸下去的路径为边界节点
+4.树右边界延伸下去的路径为边界节点
+
+标准1：
+这里要求的顺序是逆时针的顺序不重复打印.关键是利用一个二维数组levelBound，把每一层的左边界和右边界都保存起来
+1.先利用获取高度的方法，填充levelBound。
+1.从上到下打印所有层中最左边的节点
+2.打印既不是左边界，也不是右边界的叶子节点
+3.倒序打印不是左边界的所有右边界
+
+
+标准2：
+1.从头结点开始往下寻找，找到第一个既有左孩子，又有右孩子的节点，即为h，进入步骤2，这个过程中找过的节点都打印。
+2.h的左子树先进入步骤3的打印过程；h的右子树再进入步骤4的打印过程。
+3.打印左边界的延伸路径以及h左子树上所有的叶子节点，详见printLeftEdge函数
+4.打印右边界的延伸路径以及h右子树上所有的叶子节点，详见printLeftEdge函数
+
+
+```java
+//标准1
+
+    public List printBoundary1(TreeNode root){
+        ArrayList<Integer> list = new ArrayList<>();
+        if(root==null) return list;
+        int height = getHeight(root);
+        TreeNode[][] levelBound = new TreeNode[height+1][2];
+        setLevelBound(root, 1, levelBound);
+        //打印所有的左边界
+        for(int i=1;i<=height;i++){
+            list.add(levelBound[i][0].val);
+        }
+
+        //前序打印所有的不是边界的叶子
+        printLeafNotBound(root, 1, levelBound, list);
+        //倒序打印所有是右边界，但不是左边界的节点。如果如果该层只有一个节点，
+        //那么它既是左边界又是右边界，之前肯定在打印左边界时打印过了，就不打印
+        for(int i=height;i>0;i--){
+            if(levelBound[i][0]!=levelBound[i][1]){
+                list.add(levelBound[i][1].val);
+            }
+        }
+
+        return list;
+    }
+
+    public void printLeafNotBound(TreeNode n, int l, TreeNode[][] levelBound, List<Integer> list){
+        if(n==null) return;
+        if(levelBound[l][0]!=n && levelBound[l][1]!=n && n.left==null && n.right==null){
+            list.add(n.val);
+        }
+        printLeafNotBound(n.left, l+1, levelBound, list);
+        printLeafNotBound(n.right, l+1, levelBound, list);
+    }
+
+    public int getHeight(TreeNode h){
+        if(h==null){
+            return 0;
+        }
+        return 1+Math.max(getHeight(h.left), getHeight(h.right));
+    }
+
+    public void setLevelBound(TreeNode h, int l, TreeNode[][] levelBound){
+        if(h==null){
+            return;
+        }
+        //如果该层的左边界已经被设置过了，就不用管，否则左节点就是h
+        levelBound[l][0] = levelBound[l][0]==null?h:levelBound[l][0];
+        //一直更新该层的右边界是h，一定会被更新为最右边的节点
+        levelBound[l][1] = h;
+        setLevelBound(h.left, l+1, levelBound);
+        setLevelBound(h.right, l+1, levelBound);
+    }
+
+
+
+
+ArrayList<Integer> list = new ArrayList<>();
+public List printBoundary2(TreeNode root){
+    if(root==null) return list;
+    if(root.left==null || root.right==null){
+        list.add(root.val);
+        printBoundary2(root.left==null?root.right:root.left);
+    }else{
+        printLeftEdge(node.left, true);
+        printRightEdge(node.right, true);
+    }
+    return list;
+}
+
+public void printLeftEdge(TreeNode node, boolean added){
+    if(node==null){
+        return;
+    }
+    //对于左边的，先访问本节点，然后再访问它的左右孩子
+    if(added || (node.left==null && node.right==null)){
+        list.add(node)
+    }
+    printLeftEdge(node.left, added);
+    printLeftEdge(node.right, added && node.left==null?true:false);
+}
+
+public void printRightEdge(TreeNode node, boolean added){
+    if(node==null){
+        return;
+    }
+    //对于右边的，先访问它的左右孩子，最后再访问本节点
+    printLeftEdge(node.left, added);
+    printLeftEdge(node.right, added && node.left==null?true:false);
+    if(added || (node.left==null && node.right==null)){
+        list.add(node)
+    }
+}
+```
+
+直观地打印二叉树，可以直观地展示树的形状，也便于画出真实的结构：c-p100
+打印二叉树顺时针旋转90°的样子，如何清晰表示一个节点的父节点呢？如果一个节点打印结果的前缀和后缀都是H，说明这个节点是根节点，不存在父节点。如果一个打印结果前缀和后缀都有v，说明父节点在当前列所在的前一列，在该节点的下方，且是离该节点最近的节点。如果一个打印结果前缀和后缀都有^，说明父节点在当前列所在的前一列，在该节点的上方，且是离该节点最近的节点。
+
+对于节点打印时所占的统一长度必须统一，例如如果一些节点的值很短，如1，2.有的节点值很长，如323123123，那么如果不统一长度的话，一定会格式对不齐，进而产生歧义。在java中，最长的整数是Integer.MIN_VALUE（-2147483648）长度为11，加上前后缀，长度为13，为了更好区分，把前面加上两个空格，后面加上两个空格。因此，长度为17的空间一定能存放任何一个32位整数。例如，对于v8v，要在前面补7个空格，在后面补7个空格，总长度为17
+即：(       v8v       ),对于v66v，要在前面补6个空格，后面补7个空格：（      v66v       ）
+
+打印的过程结合了先右子树，再根节点，最后左子树的递归遍历过程。如果递归到一个节点，先遍历它的右子树，右子树遍历结束后再回到这个节点。如果这个节点所在的层为l，则先打印l* 17个空格，不换行，然后开始制作该节点的打印内容，这个内容包括节点的值，及前后缀字符，及补充的空格。如果该节点是其父节点的右孩子，前后缀是v，因为它必然在它父节点的上面，如果是左孩子，前后缀是^，如果是头结点，前后缀为H。打印完这个内容后换行，最后进行左子树的遍历过程
+
+```java
+
+    public void printBinaryTree(TreeNode n, int l, boolean isRoot, boolean isLeft){
+        if(n==null) return;
+        //打印右子树
+        printBinaryTree(n.right, l+1, false, false);
+
+        //确定标志位
+        char flag = isLeft?'^':'v';
+        flag = isRoot?'H':flag;
+        //高度是多少，则空出多少17个空格
+        for(int i=0;i<l;i++){
+            for(int j=0;j<17;j++){
+                System.out.print(' ');
+            }
+        }
+        //组合当前节点的内容
+        StringBuilder str = new StringBuilder();
+        str.append(flag).append(n.val).append(flag);
+        int rest = 17-str.length();
+        //补前面的0
+        for(int i=0;i<rest/2;i++){
+            str.insert(0, ' ');
+        }
+        //后半部分要补的空格是总空格除以2向上取整
+        rest = (int)Math.ceil((double) rest/2);
+        for(int i=0;i<rest;i++){
+            str.append(' ');
+        }
+        //打印后换行
+        System.out.println(str.toString());
+
+        //打印左子树
+        printBinaryTree(n.left, l+1, false, true);
+    }
+
+```
+对于树：(实在不好画图，画本子上把)
+
+        TreeNode node = new TreeNode(1);
+        node.left = new TreeNode(2);
+        node.right = new TreeNode(3);
+        node.left.right = new TreeNode(4);
+        node.left.right.left = new TreeNode(7);
+        node.left.right.right = new TreeNode(8);
+        node.left.right.right.right = new TreeNode(11);
+
+        node.left.right.right.right.left = new TreeNode(13);
+        node.left.right.right.right.right = new TreeNode(14);
+
+
+
+        node.right.left = new TreeNode(5);
+        node.right.right = new TreeNode(6);
+        node.right.left.left = new TreeNode(9);
+        node.right.left.right = new TreeNode(10);
+        node.right.left.left.left = new TreeNode(12);
+        node.right.left.left.left.left = new TreeNode(15);
+        node.right.left.left.left.right = new TreeNode(16);
+
+
+打印结果如下：
+
+                                         v6v       
+                        v3v       
+                                                         v10v      
+                                         ^5^       
+                                                          ^9^       
+                                                                                           v16v      
+                                                                          ^12^      
+                                                                                           ^15^      
+       H1H       
+                                                                                           v14v      
+                                                                          v11v      
+                                                                                           ^13^      
+                                                          v8v       
+                                         v4v       
+                                                          ^7^       
+                        ^2^       
+
+
+
+二叉树的序列化与反序列化：c-p103
+
+不用又保存前序又保存中序，只保存前序即可，但要保存非空节点的空节点孩子
+前序：
+序列化，把二叉树的前序序列放在一个String中，空节点用#表示,节点之间用,隔开
+反序列化，先把序列放入队列中，用这个队列作为参数，按照前序遍历的方法，去构建树。因为序列化时是前序，此时也按照前序构建，并且保存了空孩子，不会引起歧义
+
+```java
+    public String serialize(TreeNode root){
+        if(root==null){
+            return "#,";
+        }
+        String res = root.val + ",";
+        res += serialize(root.left);
+        res += serialize(root.right);
+        return res;
+    }
+
+
+    public TreeNode deserialize(String str){
+        String[] strs = str.split(",");
+        LinkedList<String> queue = new LinkedList<>();
+        for(int i=0;i<strs.length;i++){
+            queue.offer(strs[i]);
+        }
+        return reconPreOrder(queue);
+
+    }
+
+    public TreeNode reconPreOrder(Queue<String> queue){
+        String value = queue.poll();
+        if("#".equals(value)){
+            return null;
+        }
+        TreeNode node = new TreeNode(Integer.valueOf(value));
+        node.left = reconPreOrder(queue);
+        node.right = reconPreOrder(queue);
+        return node;
+    }
+
+```
+
+层序遍历也类似，核心还是要保存非空节点的空子节点
+序列化：先用层序遍历把节点序列化成字符串
+反序列化：用层序遍历的方式构建节点。
+
+```java
+    public String serialize(TreeNode root){
+        LinkedList<TreeNode> queue = new LinkedList<>();
+        queue.offer(root);
+        StringBuilder str = new StringBuilder();
+        while(!queue.isEmpty()){
+            TreeNode p = queue.poll();
+            if(p==null){
+                str.append('#').append(',');
+                continue;
+            }else{
+                str.append(p.val).append(',');
+            }
+            queue.offer(p.left);
+            queue.offer(p.right);
+        }
+        return str.toString();
+
+    }
+
+
+    public TreeNode deserialize(String str){
+        String[] strs = str.split(",");
+        LinkedList<TreeNode> queue = new LinkedList<>();
+        TreeNode root = buildNode(str[0]);
+        queue.offer(root);
+        int i=1;
+        while(!queue.isEmpty()){
+            TreeNode p = queue.poll();
+            if(p==null){
+                continue;
+            }else{
+                p.left = buildNode(str[i++]);
+                p.right = buildNode(str[i++]);
+            }
+            queue.offer(p.left);
+            queue.offer(p.right);
+        }
+        return root;
+    }
+
+    public TreeNode buildNode(String str){
+        if("#".equals(str)){
+            return null;
+        }
+        return new TreeNode(Integer.valueOf(str));
+    }
+
+```
+
+
+
+
+遍历二叉树的神级方法：c-p107
+
+之前的递归和非递归的的空间复杂度都是O(h),h是二叉树的高度。如果完全不用栈结构能完成三种遍历吗？
+答案是可以，使用二叉树节点中大量指向的null指针。本题实际上就是Morries遍历
+
+首先看普通的递归和非递归解法，其实都使用了栈结构，在处理完二叉树某个节点后可以回到上层取。为什么从下层回到上层如此之难？因为二叉树的结构如此，每个节点都有指向孩子节点的指针，而没有指向父节点的指针，所以从上到下易，从下到上难。
+
+Morris遍历实际上就是避免使用栈结构，而是让下层到上层有指针，具体是通过底层节点指向null的空闲指针指回上层的某个节点，从而完成下层到上次的移动
+
+首先看中序：
+1.假设当前子树的头结点为h，让h的左子树中最右节点的right指针指向h，然后的左子树继续步骤1的处理过程，直到遇到某个节点没有左子树时记为node。
+2.从node开始通过每个节点的right指针进行移动，并依次打印，假设移动到的节点为cur。对于每一个cur节点都判断cur节点的左子树中最右节点是否指向cur
+    ①如果是，让cur节点的左子树中最右节点的right指针指向空，也就是把步骤1的调整后再逐渐调整回来，然后打印cur，继续通过cur的right指针移动到下一个节点，重复步骤2
+    ②如果不是，以cur为头的子树重回步骤1执行。
+3.步骤2最终会移动到null，整个过程结束
+
+用一个二叉树手动模拟一下算法，会发现实现很简单
+1.如果当前子树为空，返回
+  否则假设当前子树的头结点为h，从h的左子树一直往右找，找到右孩子为空，或右孩子为h的节点，记为node
+    ①如果node的右孩子为空，则让node的右孩子等于h,且以h的左子树为当前子树，返回步骤1
+    ②如果node的右孩子等于h，则令node的右孩子为空，进入步骤2
+2.打印h，并且以h的右子树为当前子树，返回步骤1
+
+
+```java
+public void morrisIn(TreeNode root){
+    if(root==null)
+        return;
+    TreeNode cur1 = root;
+    TreeNode cur2 = null;
+    while(cur1!=null){
+        cur2 = cur1.left;
+        if(cur2!=null){
+            //不断找到cur2最右边的节点，如果已经指定了
+            while(cur2.right!=null && cur2.right!=cur1){
+                cur2 = cur2.right;
+            }
+            //让cur1左子树，即以cur2为根的树最右边的节点为cur1
+            //且cur1成为cur1的左子树
+            //到了这里，要么cur2的右孩子是空（说明还没设置）
+            //要么cur2的右孩子就是cur1（已经设置了）
+            if(cur2.right==null){
+                cur2.right = cur1;
+                cur1 = cur1.left;
+                continue;
+            }else{
+                //如果已经设置了
+                cur2.right=null;
+            }
+
+        }
+        System.out.print(cur1.val + " ");
+        cur1 = cur1.right;
+    }
+    System.out.println();
+}
+```
+
+Morris前序遍历的实现就是Morris中序遍历实现的简单改写，只是修改打印的时机，打印时机放在步骤1发生的时候，正在处理以h为头的子树，且是以h为头的子树首次进入调整过程，则直接打印h
+
+
+```java
+public void morrisPre(TreeNode root){
+    if(root==null)
+        return;
+    TreeNode cur1 = root;
+    TreeNode cur2 = null;
+    while(cur1!=null){
+        cur2 = cur1.left;
+        if(cur2!=null){
+            while(cur2.right!=null && cur2.right!=cur1){
+                cur2 = cur2.right;
+            }
+
+            if(cur2.right==null){
+                cur2.right = cur1;
+                System.out.print(cur1.val + " ");
+                cur1 = cur1.left;
+                continue;
+            }else{
+                cur2.right=null;
+            }
+        }else{
+            System.out.print(cur1.val + " ");
+        }
+        
+        cur1 = cur1.right;
+    }
+    System.out.println();
+}
+```
+
+Morris后序遍历也是Morris中序遍历的改写，但包含调整过程，简单来说，就是依次逆序打印所有节点的左子树的右边界。（最好看代码，这个描述太抽象）
+
+可以看到Morris遍历的前中后序的总体结构是一样的，只是打印时机不同，而且后序加了个调整。
+
+```java
+public void morrisPost(TreeNode root){
+    if(root==null)
+        return;
+    TreeNode cur1 = root;
+    TreeNode cur2 = null;
+    while(cur1!=null){
+        cur2 = cur1.left;
+        if(cur2!=null){
+            while(cur2.right!=null && cur2.right!=cur1){
+                cur2 = cur2.right;
+            }
+
+            if(cur2.right==null){
+                cur2.right = cur1;
+                cur1 = cur1.left;
+                continue;
+            }else{
+                cur2.right=null;
+                printRightEdge(cur1.left);
+            }
+        }
+        cur1 = cur1.right;
+    }
+    printRightEdge(root);
+    System.out.println();
+}
+
+//打印以root为根的子树的右边界
+public void printRightEdge(TreeNode root){
+    //打印倒序，则可以先翻转过来，然后打印完了再翻转过去
+    TreeNode tail = reverseRightEdge(root);
+    TreeNode cur = tail;
+    while(cur!=null){
+        System.out.print(cur.val + " ");
+        cur = cur.right;
+    }
+    reverseRightEdge(tail);
+}
+
+//让 n1.right=n2, n2.right=n3  变成 n3.right=n2, n2.right=n1 就像是单链表的翻转一样。
+public TreeNode reverseRightEdge(TreeNode from){
+    TreeNode dummy = new TreeNode(0);
+    dummy.right = null;
+    TreeNode cur = from;
+    while(cur!=null){
+        TreeNode tmp = cur.right;
+        cur.right = dummy.right;
+        dummy.right = cur;
+        cur = tmp;
+    }
+    return dummy.right;
+}
+
+
+```
+
+
+在二叉树中找到累加和为指定值的最长路径长度：c-p115
+树中可能出现负值
+求累加和为sum的最长路径长度，路径是指从某个节点往下，每次最多选择一个孩子节点或不选所成的节点链。用递归方法求解，能解出，但时间复杂度太高（见437）
+本解法是可以做到tO(N), sO(h)
+
+具体：
+1.二叉树头结点head和规定值sum已知，生成变量maxLen，记录累加和等于sum的最长路径长度。
+2.生成哈希表sumMap，记录从head开始的一条路径上的累加和的出现情况。累加和从head的值开始累加，sumMap的key代表某个累加和，value代表这个累加和在路径中最早出现的层数
+3.首先在sumMap中加入一个记录(0,0)（这一步很重要！！这是起始情况），它表示累加和0不用包括任何节点就可以得到。然后按照二叉树的先序遍历方式遍历节点，遍历到的当前节点记为cur，从head到cur父节点的累加和记为preSum，cur所在的层数记为level。将cur.value+preSum的值记为curSum，就是从head到cur的累加和，如果sumMap中已经包含了curSum的记录，说明curSum在上层中已经出现过，那么就不更新sumMap；否则把curSum放入。如果map中含有curSum-sum的key，说明从head到当前节点的路径上，有子路径的和是sum，该子路径的长是（当前层数-（curSum-sum所在的层数）），让它和当前maxlen中的大值赋给maxlen。
+4.递归遍历当前节点的左右子树
+5.如果curSum的值是当前层高，则从sumMap中删除curSum-curlevel，为了让上层的另一个分支不受当前分支的干扰.
+
+
+其本质实际上是一种trackback，每次sumMap中只保存head到当前节点的路径上出现过的子路径的所有和值，并且相同的和下只保存head到更上面的节点的路径和，这是为了让下面满足条件的子路径计算时，能得到更大的子路径长，如：
+路径1-2的和是10
+路径1-2-3-4 的和也是 10
+路径1-2-3-4-5-6的和是15， 要求的sum是5，所以更长的子路径是3-4-5-6，因此map保存的就应该是节点2的层数
+
+
+```java
+    public int getLongestSumPath(TreeNode root, int sum){
+        HashMap<Integer, Integer> map = new HashMap<>();
+        map.put(0,0);
+        return preOrder(root, 1, 0, 0, sum ,map);
+    }
+
+    public int preOrder(TreeNode root, int level, int maxLen, int preSum, int sum, HashMap<Integer, Integer> map){
+        if(root==null) return maxLen;
+        int curSum = preSum + root.val;
+        if(!map.containsKey(curSum)){
+            map.put(curSum, level);
+        }
+        if(map.containsKey(curSum - sum)){
+            maxLen = Math.max(level - map.get(curSum - sum), maxLen);
+        }
+        maxLen = Math.max(maxLen, preOrder(root.left, level+1, maxLen, curSum, sum, map));
+        maxLen = Math.max(maxLen, preOrder(root.right, level+1, maxLen, curSum, sum, map));
+        if(map.get(curSum)==level){
+            map.remove(curSum);
+        }
+        return maxLen;
+    }
+
+```
+
+找到二叉树中的最大搜索二叉子树：c-p117
+给一棵二叉树，树中的节点值都不一样
+搜索二叉子树的叶子必须是原二叉树的叶子，即不能从中间截出一块来，只能从下往上取
+显然可以使用递归法方法，方法返回的是以本节点为根是否能构成一个二叉排序树。如果节点是null，可以视其为二叉排序树，返回true。对一个节点，如果它的左右子树都不是二叉排序树，那么它一定不是二叉排序树，返回false。若左子树是，且其最大值节点小于本节点值，则说明根值和左子树可构成搜索树；若右子树是，且其最小值节点大于本节点值，则说明根值和右子树可构成搜索树。将能构成的二叉排序树的中序序列返回给上层（作为参数），函数返回true。
+
+```java
+
+    TreeNode ansRoot = null;
+    int maxNode = 0;
+
+    public TreeNode getMaxSearchChildBinaryTree(TreeNode root){
+        isBinaryTree(root, new ArrayList<Integer>());
+        return ansRoot;
+    }
+
+    //list中存放以root为根能构成的搜索树的中序遍历序列，如果不能构成，则其为空
+    public boolean isBinaryTree(TreeNode root, List<Integer> list){
+        if(root==null) return true;
+        ArrayList<Integer> leftList = new ArrayList<>();
+        ArrayList<Integer> rightList = new ArrayList<>();
+        boolean isLeft = isBinaryTree(root.left, leftList);
+        boolean isRight = isBinaryTree(root.right, rightList);
+
+        //左右子树都不是搜索树，则本树一定不是
+        if(!isLeft && !isRight){
+            return false;
+        }
+        //若左子树是，且其最大值节点小于本根值，则说明根值和左子树可构成搜索树
+        if(isLeft && (leftList.size()==0 ||  leftList.get(leftList.size()-1)<root.val)){
+            list.addAll(leftList);
+        }
+        list.add(root.val);
+        //若右子树是，且其最小值节点大于本根值，则说明根值和右子树可构成搜索树
+        if(isRight && (rightList.size()==0 ||  rightList.get(0)>root.val)){
+            list.addAll(rightList);
+        }
+
+
+        int nodeCnt = list.size();
+        if(maxNode<nodeCnt){
+            ansRoot = root;
+            maxNode = nodeCnt;
+        }
+        return true;
+    }
+
+```
+
+
+
+找到二叉树中符合二叉排序树条件的最大拓扑结构：c-p119
+给一棵二叉树，树中的节点值都不一样，这道题搜索二叉树就可以从中间截出来一块了（即子树的叶子可以不是原二叉树的叶子），此时返回的是符合二叉排序树的子结构的大小
+修改一下上面的方法，
+
+先看一种简单解法，对于每一个节点，都搜索以它为根的最大二叉搜索树拓扑结构，往下添加节点，必须要当前遍历到的节点符合上下限要求才能添加，直到无法再往下走就返回。整个左子树都要小于根值，整个右子树都要大于根值。 一开始的时候，上下限分别是MAX和MIN，代表没有上下限，往下传递时才会补充上下限
+时间复杂度为O(N^2)
+
+```java
+
+    public int getMaxSearchChildNodes(TreeNode root){
+        if(root==null) return 0;
+        int ans = addNode(root, Integer.MIN_VALUE, Integer.MAX_VALUE);
+        ans = Math.max(ans, getMaxSearchChildNodes(root.left));
+        ans = Math.max(ans, getMaxSearchChildNodes(root.right));
+        return ans;
+    }
+
+    public int addNode(TreeNode node, int lower, int upper){
+        if(node==null) return 0;
+        int val = node.val;
+        int cnt = 0;
+        if(val>lower && val<upper){
+            cnt=1;
+        }else{
+            return 0;
+        }
+        cnt += addNode(node.left, lower, Math.min(upper, val));
+        cnt += addNode(node.right, Math.max(val, lower), upper);
+        return cnt;
+
+    }
+```
+
+## 下面方法有点难以理解，暂不考虑
+利用拓扑贡献记录：每个节点旁边有被括号括起来的两个值，称为节点对当前头结点的拓扑贡献记录
+第一个值代表节点的左子树可以为当前头结点的拓扑贡献几个节点；第二个值代表节点的右子树可以为当前头结点的拓扑贡献几个节点；
+              10(3,3)
+      4(1,1)           14(1,1)
+2(0,0)    5(0,0)  11(0,0)    15(0,0)
+例如4(1,1) 代表4的左子树为节点10为头的拓扑结构贡献1个节点，4的右子树为节点10为头的拓扑结构贡献1个节点
+
+如       13(0,1)
+    20(0,0)   16(0,0)
+
+13的左子树为13为头的拓扑结构贡献0个节点；13的右子树为13为头的拓扑结构贡献1个节点；
+
+如果得到了h左右孩子为头的拓扑贡献记录，则可以快速得到以h为头的拓扑贡献记录
+
+
+
+
+
+二叉树的按层打印与zigzag打印：c-p129
+按层打印，非常简单，层序遍历即可，不同点是要标注level，也很简单，多加一个变量表示层数。用两个队列很方便，用一个队列的就加两个变量，一个代表本层剩下的节点数，一个代表下一层的节点数，
+
+zigzag也很简单，两个队列和一个队列的方法都可以，用一个list存储节点，奇数层顺序输出，偶数层倒序输出即可。更好的方法是不使用list（因为list如果扩容的话，时间复杂度会上升），而使用双端队列，奇数层顺着出，偶数层倒着出
+
+```java
+//层序
+    public void levelOrder(TreeNode root){
+        Queue<TreeNode> queue = new LinkedList<>();
+        queue.offer(root);
+        ArrayList<Integer> list = new ArrayList<>();
+        int cnt = 1;
+        int nextlevel = 0;
+        int level=1;
+        while(!queue.isEmpty()){
+            TreeNode p = queue.poll();
+            list.add(p.val);
+            if(p.left!=null){
+                queue.offer(p.left);
+                nextlevel++;
+            }
+            if(p.right!=null){
+                queue.offer(p.right);
+                nextlevel++;
+            }
+            cnt--;
+            if(cnt==0){
+                cnt = nextlevel;
+                nextlevel = 0;
+                System.out.print("Level "+level+ " : ");
+                for(int i=0;i<list.size();i++){
+                    if(i==list.size()-1){
+                        System.out.print(list.get(i));
+                    }else{
+                        System.out.print(list.get(i) + " ");
+                    }
+                }
+                level++;
+                list.clear();
+                System.out.println();
+            }
+
+        }
+    }
+
+//zigzag
+    public void zigzagOrder(TreeNode root) {
+        Queue<TreeNode> queue = new LinkedList<>();
+        queue.offer(root);
+        LinkedList<Integer> list = new LinkedList<>();
+        int cnt = 1;
+        int nextlevel = 0;
+        int level = 1;
+        while (!queue.isEmpty()) {
+            TreeNode p = queue.poll();
+            list.offer(p.val);
+            if (p.left != null) {
+                queue.offer(p.left);
+                nextlevel++;
+            }
+            if (p.right != null) {
+                queue.offer(p.right);
+                nextlevel++;
+            }
+            cnt--;
+            if (cnt == 0) {
+                cnt = nextlevel;
+                nextlevel = 0;
+                System.out.print("Level " + level + " : ");
+                while (!list.isEmpty()) {
+                    int e = ((level&1)!=0)?list.pollFirst():list.pollLast();
+                    if (list.isEmpty()) {
+                        System.out.println(e);
+                    } else {
+                        System.out.print(e + " ");
+                    }
+                }
+                level++;
+                list.clear();
+            }
+        }
+    }
+
+```
+
+调整搜索二叉排序树中两个错误的节点，并且在要完全交换两个节点的位置（而不只是交换值）：c-p134
+
+这个题是题目99的改进版，要求交换两个节点，不光是交换值
+
+二叉树的中序遍历是升序的，因此在中序遍历的过程中，一定会发生降序，中序遍历时节点发生降序，第一个错误的节点是第一次降序时较大的节点，第二个错误的节点是降序时较小的节点。可以用中序序列把节点全部放进list（99题），但没必要，首先要中序遍历一遍，找到两个错误的节点并保存，然后再中序遍历一遍，找到他俩的父节点，然后先交换彼此的父节点(即交换2个父节点的相应域)，再交换彼此的即可。（先交换父节点，再交换子节点，即使两个错误节点有父子关系，最终结果也是保证正确的）
+
+需要注意的是，找第二个错误节点时，先用第一个错误节点的后继赋予它，然后接下来如果还有错误节点，则再次赋给它，这样做的目的是怕两个错误节点连在一起时，找不到第二个错误节点：
+
+如： 1 2 3 6 5 4   遍历到5时，令error1=6（即5的pre），也令error2=5，接着遍历到4时，再令error=4
+
+如 1 2 3 5 4 6
+遍历到4时，令error1=5（即4的pre），也令error2=4，接着遍历就没有降序了。如果此时遍历到4时，只令error1=5。那么error2将找不到了
+
+
+
+```java
+
+    public void recoverTree(TreeNode root){
+        TreeNode pre = null;
+        TreeNode error1 = null;
+        TreeNode error2 = null;
+        Stack<TreeNode> stk = new Stack<>();
+        TreeNode p = root;
+        //第一次遍历，找到俩错误节点
+        while(p!=null || !stk.isEmpty()){
+            if(p!=null){
+                stk.push(p);
+                p = p.left;
+            }else{
+                p = stk.pop();
+                if(pre!=null && pre.val>p.val){
+                    if(error1==null){
+                        error1=pre;
+                    }
+                    //注意，这里有点特殊，如果两个错误的顶点不挨着，则error2先赋第一次错误时的小值，
+                    //再赋第二次错误时的小值，其值没问题
+                    //如果两个顶点挨着，则error2先赋第一次错误时的小值，接下来不会再被赋值了，但error2实际就是这个值
+                    error2 = p;
+
+                }
+                pre = p;
+                p = p.right;
+            }
+        }
+
+
+        p = root;
+        pre = null;
+        TreeNode error1Pre = null;
+        TreeNode error2Pre = null;
+        stk.clear();
+        //第二次遍历，找到两个父节点，注意父节点不是遍历时的上一个节点！可别弄混了
+        while(p!=null || !stk.isEmpty()){
+            if(p!=null){
+                stk.push(p);
+                p = p.left;
+            }else{
+                p = stk.pop();
+                if(p.left==error1 || p.right==error1){
+                    error1Pre = p;
+                }else if(p.left==error2 || p.right==error2){
+                    error2Pre = p;
+                }
+                pre = p;
+                p = p.right;
+            }
+        }
+
+        TreeNode tmpleft = null;
+        TreeNode tmpright = null;
+
+        //交换到父节点合适的分支上
+        if(error1Pre!=null){
+            if(error1Pre.left==error1){
+                error1Pre.left = error2;
+            }else{
+                error1Pre.right = error2;
+            }
+        }
+        if(error2Pre!=null){
+            if(error2Pre.left==error2){
+                error2Pre.left = error1;
+            }else{
+                error2Pre.right = error1;
+            }
+        }
+        //交换孩子节点
+        tmpleft = error1.left;
+        tmpright = error1.right;
+        error1.left = error2.left;
+        error1.right = error2.right;
+        error2.left = tmpleft;
+        error2.right = tmpright;
+    }
+
+```
+
+
 
 
 
