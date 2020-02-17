@@ -28185,9 +28185,203 @@ zigzag也很简单，两个队列和一个队列的方法都可以，用一个li
 
 
 
+二叉树t1是否包含t2树全部的拓扑结构：c-p140
+依次遍历t1所有的节点，是否包含t2形状的拓扑
+
+```java
+public boolean isContain(TreeNode h1, TreeNode h2){
+    if(h2==null) return true;
+    else if(h1==null) return false;
+    return isInclude(h1,h2) || isContain(h1.left, h2) || isContain(h1.right, h2);
+
+}
+
+public boolean isInclude(TreeNode h1, TreeNode h2){
+    //只要h2是空，h1不是空也可
+    if(h2==null){
+        return true;
+    }else if(h1==null){
+        //h1为null， h2不为空
+        return false;
+    }
+    return h1.val==h2.val && isInclude(h1.left, h2.left) && isInclude(h1.right, h2.right);
+}
 
 
+```
 
+二叉树t1是否包含t2一样的子树：c-p141
+依次遍历t1所有的节点，是否包含t2形状的子树，上一题是h2的节点为空时，不论如何都满足条件，这时h2为空h1也必须为空。
+```java
+public boolean isSubtree(TreeNode h1, TreeNode h2){
+    if(h2==null && h1==null) return true;
+    else if(h2==null || h1==null) return false;
+    return isInclude(h1,h2) || isInclude(h1.left, h2) || isInclude(h1.right, h2);
+
+}
+
+public boolean isInclude(TreeNode h1, TreeNode h2){
+    if(h2==null && h1==null) return true;
+    else if(h2==null || h1==null) return false;
+
+    return h1.val==h2.val && isInclude(h1.left, h2.left) && isInclude(h1.right, h2.right);
+}
+
+
+```
+
+判断二叉树是否为二叉平衡树：c-p144
+左右孩子的高度差不超过1
+
+整体解法是后序遍历，先遍历node的左子树，node的左子树是否为平衡二叉树，如果发现不是二叉平衡树，直接返回；如果是，则再看右子树，程序是一样的。如果左右子树都是平衡树，就看l和r差的绝对值是否大于1，如果是则说明不是二叉平衡树，否则就是返回l和r较大的那一个。使用一个boolean的数组保持遍历过程中每个子树是否是平衡的，如果发现不平衡的，设置boolean数组为false，且直接返回，此时返回什么不重要。boolean数组其功能相当于一个全局变量
+
+```java
+public is isBalanced(TreeNode h){
+    if(h==null) return true;
+    boolean[] res = new boolean[1];
+    res[0] = true;
+    getHeight(h, 1, res);
+    return res[0];
+}
+
+public int getHeight(TreeNode h, int level, boolean[] res){
+    if(h==null) return level;
+    int lh=0,rh=0;
+
+    lh = getHeight(h.left, level+1, res);
+    if(!res[0])
+        return level;
+
+    rh = getHeight(h.right, level+1, res);
+    if(!res[0])
+        return level;
+
+    if(Math.abs(rh-lh)>1){
+        res[0] = false;
+        return level;
+    }
+    level = Math.max(rh, lh);
+    return level;
+}
+```
+
+给定一个整型数组，已知没有重复值，判断arr是否可能是节点值为整型的二叉搜索树后序遍历的结果，如果是，则重构该树：c-p145
+
+判断：c-p145.1
+最后一个元素是根，分离出左子树和右子树，左子树是从头到第一个大于根的元素。如果右子树中有小于根的，直接返回false。否则递归判断左子树和右子树是否符合。
+
+构建：c-p145.2
+构建更简单，因为确定是搜索树，所以只需要分离出左右子树即可，然后分别递归构建左右子树
+
+```java
+public boolean isPostOrder(int[] arr){
+    if(arr==null || arr.length==0) return true;
+    return isPostOrder(arr, 0, arr.length-1);
+}
+
+public boolean isPostOrder(int[] arr, int start, int end){
+    if(start>=end) return true;
+    int root = arr[end];
+    int rightStart=start;
+    for(;rightStart<end ;rightStart++){
+        if(arr[rightStart]>root) break;
+    }
+
+    for(int i=rightStart;i<end;i++){
+        if(arr[i]<root)
+            return false;
+    }
+
+    return isPostOrder(int[] arr, start, rightStart-1) && isPostOrder(int[] arr, rightStart, end);
+
+}
+
+
+public TreeNode buildByPostOrder(int[] arr, int start, int end){
+    if(start>end) return null;
+
+    int rootVal = arr[end];
+    TreeNode root = new TreeNode(rootVal);
+    int rightStart=start;
+    for(;rightStart<end ;rightStart++){
+        if(arr[rightStart]>rootVal) break;
+    }
+
+    root.left = buildByPostOrder(int[] arr, start, rightStart-1)
+    root.right = buildByPostOrder(int[] arr, rightStart, end);
+    return root;
+
+}
+```
+
+判断一棵二叉树是否为二叉搜索树和完全二叉树：c-p147
+
+二叉搜索树(BST)：c-p147.1
+
+由于二叉搜索树的中序一定是正序的，所以中序遍历即可，用一个单元素数组作为全局变量表示上次遍历的值，如果发现了逆序，说明不是，直接返回即可
+
+```java
+    public boolean isValidBST(TreeNode h){
+        long[] pre = new long[]{Long.MIN_VALUE};
+        return inOrder(h, pre);
+    }
+
+    public boolean inOrder(TreeNode h, long[] pre){
+        if(h==null) return true;
+        if(!inOrder(h.left, pre)){
+            return false;
+        }
+        int rootVal = h.val;
+        if(pre[0]>=rootVal){
+            return false;
+        }else{
+            pre[0] = rootVal;
+        }
+
+        if(!inOrder(h.right, pre)){
+            return false;
+        }
+
+        return true;
+    }
+```
+
+判断是否是完全二叉树(CBT)：c-p147.2
+
+层序遍历二叉树，如果当前节点没有左孩子但有右孩子，直接返回false
+如果当前节点并不是左右孩子都有，则之后遍历到的节点必须都是叶子，否则返回false
+如果遍历过程中不返回false，则最后返回true
+
+
+```java
+public boolean isCBT(TreeNode h){
+    LinkedList<TreeNode> queue = new LinkedList<>();
+    queue.offer(h);
+    boolean leaf = false;
+    while(!queue.isEmpty()){
+        TreeNode p = queue.poll();
+        if(leaf && (p.left!=null || p.right!=null)){
+            return false;
+        }
+
+        if(p.left==null){
+            if(p.right!=null) return false;
+            leaf = true;
+        }
+        if(p.right==null){
+            leaf=true;
+        }
+        if(p.left!=null)
+            queue.offer(p.left);
+        if(p.right!=null)
+            queue.offer(p.right);
+    }
+    return true;
+
+
+}
+
+```
 
 
 
