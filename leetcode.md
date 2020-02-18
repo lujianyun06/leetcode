@@ -25854,6 +25854,314 @@ public class Main{
 }
 ```
 
+字节2019笔试题2：3个同样的字母放在一起，去掉一个；AABB型的，去掉一个B
+只遍历2遍字符串，如果发现需要替代的字符，先换成‘#’，在遍历的时候去掉即可
+
+```java
+
+    public String handleStr(String s){
+        if (s==null) return null;
+        StringBuilder builder = new StringBuilder(s);
+        int len = builder.length();
+        for(int i=0;i<len;i++){
+            while (i<len && builder.charAt(i)=='#'){
+                i++;
+            }
+            int j = i+1;
+            while (j<len && builder.charAt(j)=='#'){
+                j++;
+            }
+            int k = j+1;
+            while (k<len && builder.charAt(k)=='#'){
+                k++;
+            }
+            if(i<len&&j<len&&k<len){
+                if(builder.charAt(i)==builder.charAt(j) && builder.charAt(i)==builder.charAt(k)){
+                    builder.replace(i,i+1,"#");
+                }
+            }else {
+                break;
+            }
+        }
+
+        for(int i=0;i<len;i++){
+            while (i<len && builder.charAt(i)=='#'){
+                i++;
+            }
+            int j = i+1;
+            while (j<len && builder.charAt(j)=='#'){
+                j++;
+            }
+            int k = j+1;
+            while (k<len && builder.charAt(k)=='#'){
+                k++;
+            }
+            int l = k+1;
+            while (l<len && builder.charAt(l)=='#'){
+                l++;
+            }
+
+            if(i<len&&j<len&&k<len && l<len){
+                if(builder.charAt(i)==builder.charAt(j) && builder.charAt(k)==builder.charAt(l)){
+                    builder.replace(k,k+1,"#");
+                }
+            }else {
+                break;
+            }
+        }
+        StringBuilder ans = new StringBuilder();
+        for(int i=0;i<len;i++){
+            if(builder.charAt(i)!='#'){
+                ans.append(builder.charAt(i));
+            }
+        }
+        return ans.toString();
+
+    }
+```
+
+1.田忌赛马问题
+  两个小组A、B，每个小组有n个同学。已知每位同学的速度。两个小组进行赛跑获取积分，每次派出一名同学，胜者+1，败者-1，平局+0。问A组最多积多少分。输入n代表n名同学，在输入n个数代表A组每人速度，又n个数代表B组每人速度。
+
+
+输入样例：
+3
+92 83 71
+95 87 74
+2
+20 20
+20 20
+2
+20 19
+22 18
+0
+输出样例：
+1
+0
+0
+
+
+step1：先让A的最大的和B的最大的比，如果A更大，则两个最大的同时出队，再比剩下的最大的。
+如果B更大，则让A最小的和B最大的比，A最小的和B最大的出队，然后回到step1继续，直到两个队列为空
+
+```java
+
+public class Main {
+    public static void main(String[] args){
+        Scanner in = new Scanner(System.in);
+        int n = in.nextInt();
+        LinkedList<Integer> q1 = new LinkedList<>();
+
+        for(int i=0;i<n;i++){
+            int t = in.nextInt();
+            q1.offerFirst(t);
+        }
+        Collections.sort(q1);
+
+        LinkedList<Integer> q2 = new LinkedList<>();
+        for(int i=0;i<n;i++){
+            int t = in.nextInt();
+            q2.offerFirst(t);
+        }
+        Collections.sort(q2);
+
+        int ans = 0;
+        for(int i=0;i<n;i++){
+            if(q1.peekLast()>q2.peekLast()){
+                q1.pollLast();
+                q2.pollLast();
+                ans++;
+            }else {
+                //只要A最快的不大于B最快的，最好就要用A最慢的把B最快的消耗掉
+                int t1 = q1.pollFirst();
+                int t2 = q2.pollLast();
+                if(t1>t2)
+                    ans++;
+                else if(t1<t2)
+                    ans--;
+            }
+        }
+        System.out.println(ans);
+    }
+}
+```
+
+2.取扑克牌问题
+  n张卡牌堆成一堆，每张卡牌上都有一个整数代表该牌得分。两人A,B交替从牌堆顶拿牌。第一次可以拿1-2张牌，后面每次拿牌，最多拿上个人拿牌数的两倍，最少拿1张，直到牌全部拿完。假设两个人都会采取最优策略让自己得分最大化，求先手拿牌人的得分。
+
+
+
+3.坐圆桌问题
+  n个人围着圆桌吃饭，要求每相邻两个人的身高差距不能超过m，有多少种安排方法。输入n和m,n=1,...,10,m=1,...,1000000。后面n行输入代表每个人的身高。
+
+
+1. 字节跳动大闯关
+题目描述：
+
+Bytedance Efficiency Engineering团队在8月20日搬入了学清嘉创大厦。为庆祝团队的乔迁之喜，字节君决定邀请整个EE团队，举办一个大型团建游戏-字节跳动大闯关。可是遇到了一个问题：
+
+EE团队共有n个人，大家都比较害羞，不善于与陌生人交流。这n个人每个人都向字节君提供了自己认识人的名字，不包括自己。如果A的名单里有B，或B的名单里有A，则代表A与B相互认识。同时如果A认识B，B认识C，则代表A与C也会很快认识，毕竟通过B的介绍，两个人就可以很快相互认识的了。
+
+为了大闯关游戏可以更好地团队协作、气氛更活跃，并使得团队中的人可以尽快的相互了解、认识和交流，字节君决定根据这个名单将团队分为m组，每组人数可以不同，但组内的任何一个人都与组内的其他所有人直接或间接的认识和交流。如何确定一个方案，使得团队可以分成m组，并且这个m尽可能地小呢？
+
+BFS构建集合即可,但要注意的是，由于可能A认得B，B不认得A，会导致B走不到A处，会出错，
+在构建的时候就如果A认得B或者B认得A，让map[A][B]和map[B][A]都是true即可
+
+```java
+
+public class Main {
+    public static void main(String[] args){
+        Scanner in = new Scanner(System.in);
+        int n = in.nextInt();
+        int[][] map = new int[n][n];
+        for(int i=0;i<n;i++){
+            int tmp = 0;
+            while ((tmp=in.nextInt())!=0){
+                map[i][tmp-1] = 1;
+                map[tmp-1][i] = 1;
+            }
+        }
+        boolean[] flag = new boolean[n];
+        int m = 0;
+        for(int i=0;i<n;i++){
+            if(!flag[i]){
+                flag[i] = true;
+                bfs(i, n,map, flag);
+                m++;
+            }
+        }
+        System.out.println(m);
+    }
+    static void bfs(int start, int n, int[][] map, boolean[] flag){
+        LinkedList<Integer> queue = new LinkedList<>();
+        queue.offer(start);
+        while (!queue.isEmpty()){
+            int e = queue.poll();
+            for(int i=0;i<n;i++){
+                if(map[e][i]!=0 && !flag[i]){
+                    queue.offer(i);
+                    flag[i] = true;
+                }
+            }
+        }
+    }
+}
+
+```
+
+2.合法的表达式
+
+合法标识符：0-9组成的字符串，可以包含多个前导0
+
+合法表达式：
+1、若X为合法标识符，则X是合法的表达式
+2、若X为合法的表达式，则(X)为合法的表达式
+3、若X和Y均为合法的表达式，则X+Y，X-Y均为合法的表达式
+
+如：1，100，1+2，(10), 1-(3-2)
+不合法的表达式： (, 1+-2
+
+给定一个整数n，得到结果数，结果对1000000007取模
+
+这个题不用一个一个试
+设f[i]为i个字符组成的合法表达式个数
+
+f[1]=10
+f[2]=100
+f[3]= 1000+f[1]+ 1 * 2* f[1] * f[1] 解释： 1000为3位全是数字，f[1]为最两边是括号，中间是合法表达式的情况，
+（3-2）* 2 * f[1] * f[1]：除了最边上两个位置不能是±，其他位置都能是±，
+每个位置上有加减两种情况，共有x-2个位置，然后符号两边的合法表达式个数要乘积
+
+f[4] = 10000 + f[2] + 2 * f[1] * f[2] + 2 * f[2] * f[1]...
+f[5] = 100000 + f[3] + 2* f[1] * f[3] +  但这个是可能有重复的。
+
+```java
+
+```
+
+
+3.双生词：
+双生词是满足两个条件的字符串：s和s'
+1.s与s'长度相同
+2.将s首尾相接绕成环，再选一个位置切开，顺时针或逆时针能得到s'
+
+给出测试组数t，表示共有多少组数据
+对于每组数据，第一行表示共有多少个字符串，接下来n行，每行一个字符串
+
+对于每组数据，如果存在双生词，输出Yeah，否则输出Sad
+
+每个字符串长度在1-32之间， n<100000
+
+每个字符串能得到的双生词有 2len 个，len是字符串长度
+对于一个组
+把第一个词能构成的双生词全部构造出，放在以这个词为key的map中，然后遍历剩下的词，只要有一个能满足，剩下的就不用再构造了，返回Yeah
+如果第一个试了不行，再把第二个构造出，以此类推
+
+
+```java
+
+public class Main {
+    public static void main(String[] args) {
+        Scanner in = new Scanner(System.in);
+        int t = in.nextInt();
+        while (t-- > 0) {
+            int n = in.nextInt();
+            String[] strs = new String[n];
+            for (int i = 0; i < n; i++) {
+                strs[i] = in.next();
+            }
+            if(check(n, strs)){
+                System.out.println("Yeah");
+            }else
+                System.out.println("Sad");
+        }
+
+
+    }
+
+    static boolean check(int n, String[] strs) {
+        HashMap<String, HashSet<String>> map = new HashMap<>();
+        for (int i = 0; i < n; i++) {
+            String s = strs[i];
+            buildDoubleString(s, map);
+            HashSet<String> set = map.get(s);
+            for(int j=i+1;j<n;j++){
+                if(set.contains(strs[j])) return true;
+            }
+        }
+        return false;
+    }
+
+    static void buildDoubleString(String s, HashMap<String, HashSet<String>> map){
+        HashSet<String> set = new HashSet<>();
+        map.put(s, set);
+        StringBuilder builder = new StringBuilder(s);
+        int len = s.length();
+        for(int i=0;i<len;i++){
+            char c = builder.charAt(0);
+            builder.delete(0, 1);
+            builder.append(c);
+            set.add(builder.toString());
+            set.add(builder.reverse().toString());
+            //翻转回来
+            builder.reverse();
+        }
+
+    }
+```
+
+4.空气质量，核心是找不连续最长不减子序列
+先在一个周期内找到最长的不减序列，然后看其中出现过最多的一个数是多少，
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -28383,6 +28691,26 @@ public boolean isCBT(TreeNode h){
 
 ```
 
+通过有序数组生成平衡搜索二叉树：c-p150
+给一个有序数组，没有重复值，生成平衡二叉搜索树
+
+每次都取 start-end中间的值作为根值，两边分别为左子树和右子树，递归生成
+```java
+public TreeNode generateBalancedBST(int[] arr){
+    return generateBST(arr, 0, arr.length-1);
+}
+
+public TreeNode generateBalancedBST(int[] arr, int start, int end){
+    if(start>end) return null;
+    int mid = (start+end)>>1;
+    int rootVal = arr[mid];
+    TreeNode root = new TreeNode(rootVal);
+    root.left = generateBST(arr, start, mid-1);
+    root.right = generateBST(arr, mid+1, end);
+    return root;
+}
+```
+
 
 
 
@@ -28445,12 +28773,158 @@ public boolean isCBT(TreeNode h){
     }
 ```
 
+在二叉树中找到一个节点的后继节点：c-p151
+有一种新的二叉树节点，多了一个指向父节点的parent域，头结点的parent指向null，现给一个树中的某个节点node，实现返回node中序遍历后继节点的函数。
+
+中序遍历：左-根-右
+如果node有右子树，则找到右子树最左边的节点即可
+如果node没有右子树：
+    若node是它父亲的左孩子，则后继就是它父亲
+    若node是它父亲的右孩子，则往上找直到某个祖先节点是其父节点的左孩子，则后继就是这个祖先节点的父节点（祖祖先）
+
+```java
+public TreeNode getNext(TreeNode node){
+    if(node==null) return null;
+    if(node.right!=null){
+        TreeNode p = node.right;
+        while(p.left!=null){
+            p = p.left;
+        }
+        return p;
+    }else if(node.parent==null){
+        return null;
+    }else if(node.parent.left==node){
+        return node.parent
+    }else{
+        TreeNode p = node.parent;
+        while(p.parent!=null && p.parent.left==p){
+            p = p.parent;
+        }
+        //这里不论是null或不是null都可
+        return p.parent;
+    }
+}
+```
+
+给定一棵二叉树的头结点，以及这棵树中两个节点o1和o2，返回o1，o2的最近公共节点：c-p153
+
+## 当用后序遍历到某个节点时，栈中的元素是该节点的祖先链
+问题1.本问题
+所以用非递归的后序遍历，用两次后序遍历分别存储o1，o2的祖先链，这里用LinkedList，因为它既能当栈又能当队列。当两个祖先链都获得后，按照尾端出队的方式出两个祖先链，最后一个相同的节点就是最近公共节点
+
+问题2.如果查询两个节点的最近公共祖先操作十分频繁，想办法让单条查询的查询时间减少。
+对于每个节点，把其祖先链存放在map中，即HashMap<TreeNode, LinkeList>，每当要查找时，先看map中有无该节点的祖先链，如果有的话就不用再遍历了。
+把所有的节点存储在HashSet中，对树进行后续遍历，当遍历到一个节点在HashSet中时，就保存其祖先链，当一遍遍历完后，所有需要查询的节点的祖先链就都保存起来了。
+
+
+```java
+
+    public TreeNode findLastCommonAncestor(TreeNode h, TreeNode o1, TreeNode o2){
+        LinkedList<TreeNode> list1 = getAncestorChain(h, o1);
+        LinkedList<TreeNode> list2 = getAncestorChain(h, o2);
+
+        TreeNode pre = null;
+        while(!list1.isEmpty() && !list2.isEmpty()){
+            TreeNode p1 = list1.pollLast();
+            TreeNode p2 = list2.pollLast();
+            if(p1!=p2){
+                break;
+            }
+            pre = p1;
+        }
+        return pre;
+
+    }
+
+    public LinkedList<TreeNode> getAncestorChain(TreeNode h, TreeNode t){
+        LinkedList<TreeNode> list = new LinkedList<>();
+        TreeNode p = h;
+        TreeNode pre = null;
+        while(p!=null || !list.isEmpty()){
+            while(p!=null){
+                list.push(p);
+                p = p.left;
+            }
+            TreeNode tmp = list.peek();
+            if(tmp.right==null || tmp.right==pre){
+                if(tmp == t){
+                    return list;
+                }
+                p = list.pop();
+                pre = p;
+                p = null;
+            }else{
+                p = tmp.right;
+            }
+        }
+        return list;
+    }
+
+
+```
+
+Tarjan算法与并查集解决二叉树节点间最近公共祖先的批量查询问题：c-p159
+
+（这个太复杂了，暂时不考虑）
+
+树节点：
+```java
+class TreeNode{
+    int val;
+    TreeNode left;
+    TreeNode right;
+    public TreeNode(int val){
+        this.val = val;
+    }
+}
+```
+再定义Query类如下
+```java
+class Query{
+    TreeNode o1;
+    TreeNode o2;
+    public Query(TreeNode o1, TreeNode o2){
+        this.o1 = o1;
+        this,o2 = o2;
+    }
+}
+```
+一个Query类的实例代表一条查询语句，表示想要查询o1节点和o2节点的最近公共祖先节点。
+给定一棵二叉树的头结点head，并给定所有的查询语句，即一个Query类型的数组Query[] ques,要返回TreeNode类型的数组TreeNode[] ans, ans[i]代表ques[i]这条查询的答案，即ques[i].o1和ques[i].o2的最近公共祖先。
+如果二叉树的节点数为N，查询语句条数是M，整个处理过程的时间复杂度要求达到O(N+M)
+
+首先生成ques长度一样的ans数组，有3种情况可以直接得到答案：
+1.如果o1等于o2，答案为o1
+2.如果o1和o2有一个为null，则答案是不为空的那个
+3.如果o1和o2都是null，则答案是null
+
+生成两张哈希表queryMap和indexMap，queryMap类似于邻接表，key表示查询涉及的某个节点，value是一个链表类型，表示key与那些节点之间有查询任务。indexMap的key也表示查询涉及的某个节点，value也是链表类型，表示如果一次解决有关key节点的每个问题，该把答案放在ans的上面位置。
 
 
 
+二叉树节点之间的最大距离：c-p169
+从二叉树的一个节点出发，可以向上走或者向下走，但沿途的节点只能经过1次，当到达另一个节点时，路径上的节点数叫做A到B的距离。
+对于每个节点，都把他当做拐点，计算 左子树的高度+右子树高度+1 对所有的节点，求出这个值的最大值
+```java
+public int getMaxDistance(TreeNode h){
+    int[] res = new int[1];
+    getHeight(h, res);
+    return res[0];
 
+}
 
+public int getHeight(TreeNode h, int[] res){
+    if(h==null) return 0;
+    int left = getHeight(h.left, res);
+    int right = getHeight(h.right, res);
 
+    int cur = 1+left+right;
+    if(res[0]<cur)
+        res[0] = cur;
+
+    return 1+Math.max(left, right);
+}
+```
 
 
 
