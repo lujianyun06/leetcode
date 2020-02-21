@@ -9812,8 +9812,12 @@ Best Time to Buy and Sell Stock I是只能交易一次，这里是可以交易�
 
 还是想象成折线图，则最大利润是在谷底买入，在谷后的第一个峰卖出，然后再在峰后的第一个谷买入，在这个谷后的第一个峰卖出。。。
 
+》方法二：直接遍历数组，若prices[i]>prices[i-1] 则res += prices[i]-prices[i-1]
+由于不限制次数，则可以一有价格差就买卖，而对于 3 8 10 这样的来说，3买，8卖，8又买了，10卖（8做了一个桥梁，事实上应该是3买，10卖，但这样中间加个桥梁，不影响整体，能得出答案也简单）
+
 ```java
 class Solution {
+    //方法一：
     public int maxProfit(int[] prices) {
         if(prices.length <= 1) return 0;
         //两边都下降或左边下降右边相等的，为峰，两边都上升的或左边相等右边上升的，为谷，
@@ -9846,6 +9850,18 @@ class Solution {
         }
         return totalProfit;
     }
+
+    //方法二：
+    public int maxProfit(int[] prices) {
+        if(prices.length<=1) return 0;
+        int res = 0;
+        for(int i=1;i<prices.length;i++){
+            if(prices[i]>prices[i-1])
+                res += prices[i]-prices[i-1];
+        }
+        return res;
+    }
+
 
 }
 ```
@@ -26155,9 +26171,248 @@ public class Main {
 
 
 
+头条笔试2：
+给一棵树对应的完全二叉树为参照，空白节点处用#字符表示，使用层序遍历表示二叉树，节点之间采用空格分割。
+如 
+4 2 7 # 3 6 9
+输出
+4 7 2 9 6 3 #
+
+使用重构二叉树(节点值用#存，可以处理中间的空节点的情况)输出镜像的形式，只能过80%，感觉应该是空间复杂度的问题，其实只要逆序输出每一行即可，并且不用额外的空间复杂度（只用一个数组的）：
+```java
+import java.util.LinkedList;
+import java.util.Scanner;
+public class Main {
+    public static void main(String[] args) {
+        Scanner in = new Scanner(System.in);
+        String line;
+        if (in.hasNextLine()){
+            line = in.nextLine();
+        }else {
+            return;
+        }
+
+        String[] tokens = line.split(" ");
+        if(tokens.length<=0 || tokens[0].length()<=0){
+            return;
+        }
+        int cur = 1;
+        int cnt = 0;
+        for(int i=0;i<tokens.length;){
+            for(int j=(int) Math.min(tokens.length-1,i+(1<<(cur-1))-1);j>=i;j--){
+                if(cnt==tokens.length-1){
+                    System.out.print(tokens[j]);
+                    break;
+                }
+                System.out.print(tokens[j] + " ");
+                cnt++;
+            }
+            cur++;
+            i = (1<<(cur-1))-1;
+        }
+    }
+}
+```
+
+题3：b35
+36进制由0-9，a-z，共36个字符表示，最小为'0'
+'0'~'9'对应十进制的0~9，'a'~'z'对应十进制的10~35
+例如：'1b' 换算成10进制等于 1 * 36^1 + 11 * 36^0 = 36 + 11 = 47
+要求按照加法规则计算出任意两个36进制正整数的和
+如：按照加法规则，计算'1b' + '2x' = '48'
+要求：不允许把36进制数字整体转为10进制数字，计算出10进制数字的相加结果再转回为36进制
+
+说的是不允许整体转，那就一位一位转着加
+
+//注意下面代码没有判空，真遇到了判一下空检查一下合法性之类的
+
+```java
+
+    public String add(String a, String b) {
+        HashMap<Character, Integer> map = new HashMap<>();
+        for(int i=0;i<=9;i++){
+            map.put((char) (i+'0'), i);
+        }
+
+        for(int i=0;i<36;i++){
+            map.put((char) (i+'a'), i+10);
+        }
+
+        int c = 0;
+        StringBuilder ans = new StringBuilder();
+        StringBuilder aa = new StringBuilder(a).reverse();
+        StringBuilder bb = new StringBuilder(b).reverse();
+
+        for(int i=0;i<aa.length() || i<bb.length();i++){
+            int ia = (i<aa.length())?map.get(aa.charAt(i)):0;
+            int ib = (i<bb.length())?map.get(bb.charAt(i)):0;
+            int cc = (ia+ib+c)/36;
+            int cur = (ia+ib+c)%36;
+            ans.append(getChar(cur));
+            c = cc;
+        }
+        if(c>0)
+            ans.append('1');
+        return ans.reverse().toString();
+    }
+
+    private Character getChar(int i){
+        if(i<=9) return (char)('0'+i);
+        else{
+            return (char)((i-10)+'a');
+        }
+    }
+```
+
+4. 剪绳子：b36
+
+题目描述
+有N根绳子，第i根绳子长度为Li，现在需要M根等长的绳子，你可以对n根绳子进行任意裁剪（不能拼接），请你帮忙计算出这m根绳子最长的长度是多少。
+
+输入描述：
+第一行包含2个正整数N、M，表示N根原始的绳子，和最终需要M根绳子数
+第二行包含N个整数，第i个整数Li表示第i根绳子的长度
+其中
+1 <= N、M <= 100000,
+0 < Li < 10 0000 0000
+输出描述
+对每一个测试用例，输出一个数字，表示裁剪后最长的长度，保留两位小数。
+
+  这道题其实就是问裁剪出 M 段等长绳子，最大裁剪长度是多少。像这样的 "找到一个数，它要满足一定条件" 的题目，第一反应就是 贪心+二分，比如 “公路建设加油站，使最小距离最大化” 这道题以及现在这道题。这道题就是找到一个长度值 X，使得 X 满足能够从已有的 N 根绳子中裁剪出来 M 段。
+
+二分查找：low：0，high：绳子总长度
+然后迭代mid，如果mid能满足条件，则可能有更大的值满足条件，low=mid
+如果mid不满足条件，则大于mid的一定都不满足，往小处找，high=mid
+# 因为low和high都是double，所以不能让mid±1来赋值
+
+(没看出来贪心体现在哪。。)
+
+```java
+
+import java.text.DecimalFormat;
+import java.util.ArrayList;
+import java.util.Scanner;
+
+//1 2 3 4 5 6 7 8 # 10 11 # 13 14 15
+public class Main {
+
+    public static void main(String[] args) {
+        Scanner in = new Scanner(System.in);
+        ArrayList<Double> list = new ArrayList<>();
+
+        int n = in.nextInt();
+        int m = in.nextInt();
+        double totalLen = 0;
+        for(int i=0;i<n;i++){
+            double d = in.nextDouble();
+            list.add(d);
+            totalLen += d;
+        }
+
+        double low = 0;
+        double high = totalLen;
+        while (high-low>0.0000001){
+            double mid = (low+high)/2;
+            if(check(list, mid, m)){
+                low = mid;
+            }else{
+                high = mid;
+            }
+        }
+        DecimalFormat format = new DecimalFormat("#.00");
+        String s = format.format(low);
+        //直接用%.2f 可能会导致进位,用DecimalFormat来进行截位，但用这个好像还是没法做到准确截位
+        //最保险的还是转成str，获取小数点位置后直接用substring
+        System.out.print(s);
+    }
+
+    //如果能剪成m段以上target长的绳子，说明有可能答案比target更长，否则答案一定比target更短
+    static boolean check(ArrayList<Double> list, double target, double m){
+        int cnt=0;
+        for(double d: list){
+            cnt += d/target;
+        }
+        return cnt>=m;
+    }
+}
+
+```
+
+建加油站：b37
+有一条高速公路，想要建设 m 个加油站，一共有 n 个可以选择建设加油站的地点（n >= m），在这 n 个可选位置中选择 m 个建加油站有很多种方式，每一种方式中，两个相邻加油站之间的距离都有一个最小值，每种情况的最小距离可能不一样，问所有情况中，这个最小距离的最大值是多少？
+2 <= n, m <= 100000
+1 <= a[i] < a[i + 1] <= 10^9 (a[i] 是加油站位置)
+
+原题不是这样的，但是很多人并没有理解题什么意思（什么是最小距离最大值），所以我就翻译了一下，变成上边这道题。
+  输入第一行是 n 和 m，接下来下 n 个数是加油站的位置（保证是递增的，也就是 a[i + 1] > a[i]）。比如下边例子：
+
+Input 1:        Input 1:
+5 3          5 4
+1 4 5 6 9        1 4 5 6 9
+
+Output 1:       Output 2:
+4 (1 5 9)       2 (1 4 6 9)
+
+  网上很多答案说用 DP，dp[i][j] 表示前 i 个位置中选择 j 个最小距离最大值是多少，但是这道题的 n 和 m 最大都是十万，数组开不了这么大的，vs中开这么大数组直接编译就错了。所以不是 DP，而是二分+贪心。
+
+把每个相邻距离都存入数组arr中，如对于a[i]= 1 4 5 6 9 来说，存入的是3 1 1 3
+取low=0，high=Σarr[i] 那么要做的就是每次看一个 mid 能不能满足在若干次合并内有m-1个数都 >= mid（为什么可以这样，是因为最左边和最右边的加油站一定会选，因为选其他任何两个边界，其中的最小距离都只能小于选两个顶头，每合并出一个数大于等于mid，说明可以放一个加油站和上一个加油站之间距离大等于mid）。
+共有n个可选地，所以有n-1个间隙(距离)，因为最左和最右一定会选，所以只需要把剩下的距离合并成每个距离大等于mid，且距离的个数大等于m-1个即可(如果等了，说明距离还能再大，但首先是说明了能保证距离mid满足)
 
 
+```java
+public class Main {
 
+    public static void main(String[] args) {
+        Scanner in = new Scanner(System.in);
+
+        int n = in.nextInt();
+        int m = in.nextInt();
+        long sum = 0;
+        ArrayList<Long> list = new ArrayList<>();
+        long pre = in.nextLong();
+        for(int i=1;i<n;i++){
+            long cur = in.nextLong();
+            list.add(cur-pre);
+            sum += cur-pre;
+            pre = cur;
+        }
+
+        long low = 0;
+        long high = sum;
+        long ans = 0;
+        while (high>low){
+            long mid = (low+high)>>1;
+            if(check(list, mid, m)){
+                ans = mid;
+                low = mid+1;
+            }else{
+                high = mid-1;
+            }
+        }
+        //这里不能直接用low，因为mid满足时，mid+1如果不满足，且low和high就差1，此时会跳出循环，low是mid+1，但它是不满足的。
+        System.out.println(ans);
+    }
+
+    
+    static boolean check(ArrayList<Long> list, long mid, long m){
+        int sum = 0;
+        int cnt = 0;
+        for(int i=0;i<list.size();i++){
+            sum+=list.get(i);
+            if(sum>=mid){
+                //当前段已经大于mid，则着手看下一段
+                sum=0;
+                cnt++;
+                //如果满足条件的段已经超过或等于m-1个，则说明此数字可成
+                if(cnt>=m-1) return true;
+            }
+        }
+        return false;
+
+    }
+}
+```
 
 
 
@@ -28711,67 +28966,215 @@ public TreeNode generateBalancedBST(int[] arr, int start, int end){
 }
 ```
 
+先序，中序，后序数组两两结合重构二叉树：c-p171
 
+先序，后序分别和中序组合重构比较容易，核心就是根据先序或后序找出根节点的值，然后在中序中找到根节点的位置，借此可以区分出左子树和右子树，进而可以递归构建
 
+用先序和后序遍历构建二叉树（节点值都不同），
+    1、首先要分析出一般的二叉树即使有正确的先序和后续数组，大多数情况下也不能通过这两个数组构建原来的树，因为很多结构不同的树拥有一样的先序和后序，如，根节点是1，左孩子为2，右孩子为null，则先序是[1,2],后序是[2,1]；根节点是1，左孩子是null，右孩子是2，这样的结果也是先序是[1,2],后序是[2,1]。
+    2、然后要分析如果一棵二叉树除了叶节点之外，其他所有节点都有左孩子和右孩子（即每个节点的度只为0或为2，因为先序和后序无法构造的原因就是如果一个节点的左孩子为空右子树为X，和其左子树为X右子树为空无法分辨，既然有子树的两边子树都不为空，就能分辨出了）
 
+既然两边子树都不为空，则对于前序遍历来说，如果不是只有一个值，那么，根后面的那个一定是左孩子
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-********************** 多线程题 **************************
-
-2个线程交替打印1到10
 ```java
+    public TreeNode prePosToTree(int[] pre, int[] pos){
+        if(pre==null || pos==null) return null;
+        return buildTree(pre, 0, pre.length-1, pos, 0, pos.length-1);
+    }
 
-    void alternatePrint(){
-        Semaphore s1 = new Semaphore(1);
-        Semaphore s2 = new Semaphore(0);
-        Thread t1 = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                for (int i=1;i<=10;i+=2){
-                    try {
-                        s1.acquire();
-                        System.out.println("t1:"+i);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }finally {
-                        s2.release();
-                    }
-                }
+    public TreeNode buildTree(int[] pre, int preStart, int preEnd, int[] pos, int posStart, int posEnd){
+        if(preStart>preEnd) return null;
+        TreeNode root = new TreeNode(pre[preStart]);
+        if(preStart==preEnd) return root;
+        int leftVal = pre[preStart+1];
+        int posLeftIndex = posStart;
+        for(int i=posStart;i<=posEnd;i++){
+            if(pos[i]==leftVal){
+                posLeftIndex = i;
+                break;
             }
-        });
-        t1.start();
+        }
+        int leftCount = (posLeftIndex-posStart)+1;
+        root.left = buildTree(pre, preStart+1, leftCount+preStart, pos, posStart, posStart+leftCount-1);
+        root.right = buildTree(pre, leftCount+preStart+1, preEnd, pos, posStart+leftCount, posEnd);
+        return root;
 
-
-        Thread t2 = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                for (int i=2;i<=10;i+=2){
-                    try {
-                        s2.acquire();
-                        System.out.println("t2:"+i);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }finally {
-                        s1.release();
-                    }
-                }
-            }
-        });
-        t2.start();
     }
 ```
+
+
+通过前序和中序数组，不通过重建整棵树生成后序数组：c-p174
+
+虽然不生成树，但核心思想还是一致的，用一个全局的list来保存后序数组，利用前序和中序先定位到根节点，然后递归地先把左子树和右子树加入到list中，最后再把根节点加入到list中
+
+```java
+    public int[] prePosToTree(int[] pre, int[] mid){
+        if(pre==null || mid==null) return null;
+        ArrayList<Integer> list = new ArrayList<>();
+        buildTree(pre, 0, pre.length-1, mid, 0, mid.length-1, list);
+        int[] ans = new int[pre.length];
+        for (int i=0;i<pre.length;i++){
+            ans[i] = list.get(i);
+        }
+        return ans;
+    }
+
+    public void buildTree(int[] pre, int preStart, int preEnd, int[] mid, int midStart, int midEnd, ArrayList<Integer> list){
+        if(preStart>preEnd) return;
+        int rootVal = pre[preStart];
+        if(preStart==preEnd) {
+            list.add(rootVal);
+            return;
+        }
+
+        int rootMidIndex = midStart;
+        for(int i=midStart;i<=midEnd;i++){
+            if(mid[i]==rootVal){
+                rootMidIndex = i;
+                break;
+            }
+        }
+        int leftCount = rootMidIndex-midStart;
+
+        buildTree(pre, preStart+1, leftCount+preStart, mid, midStart, rootMidIndex-1, list);
+        buildTree(pre, leftCount+preStart+1, preEnd, mid, rootMidIndex, midEnd, list);
+        list.add(rootVal);
+    }
+```
+
+给定一个整数N，如果N<1代表空树，否则代表中序遍历的结果为{1,2,3...N}，返回可能的二叉树结构有多少种：c-p175
+也就是是生成的必须是二叉排序树
+
+dp[i]代表从1到n能生成的二叉排序树的个数
+dp[0]=1 设定该值，方便计算
+dp[1]=1
+dp[2]=2
+dp[3]=dp[2]+dp[1]* dp[1] + dp[2]  (以1为根，以2为根，以3为根)
+dp[4]=dp[3] + (dp[1]* dp[2]) + (dp[2] * dp[1]) + dp[3]
+...
+dp[n] = Σdp[i]* dp[n-1-i]  (i从0到n-1)
+
+
+```java
+public int numTrees(int n){
+    if(n<=1) return 1;
+    int[] dp = new int[n+1];
+    dp[0]=1;
+    dp[1]=1;
+    dp[2]=2;
+    for(int i=3;i<=n;i++){
+        for(int j=0;j<i;j++){
+            dp[i] += dp[j]*dp[i-1-j];
+        }
+    }
+    return dp[n];
+}
+```
+
+生成这些树，其实还就是每个值都当根节点，然后递归生成子树
+```java
+public List<TreeNode> generateTree(int n){
+    if(n<=0)
+        return new ArrayList<>();
+    return generateTree(1, n);
+}
+
+public List<TreeNode> generateTree(int start, int end){
+    ArrayList<TreeNode> list = new ArrayList<>();
+    if(start>end){
+        list.add(null);
+        return list;
+    }else if(start==end){
+        list.add(new TreeNode(start));
+        return list;
+    }
+
+    for(int i=start; i<=end;i++){
+        ArrayList<TreeNode> leftList = generateTree(start, i-1);
+        ArrayList<TreeNode> rightList = generateTree(i+1, end);
+        for(int m=0;m<leftList.size();m++){
+            for(int n=0;n<rightList.size();n++){
+                TreeNode tmp = new TreeNode(i);
+                tmp.left = leftList.get(m);
+                tmp.right = rightList.get(n);
+                list.add(tmp);
+            }
+        }
+    }
+    return list;
+}
+
+```
+
+给定一棵完全二叉树的头结点head，返回这棵树的节点个数：c-p178
+对于完全二叉树，如果右子树的高度比总高度h少1，说明最后的叶子一定在右子树上，那么左子树一定是高为h-1的满二叉树。右子树是一个普通的完全二叉树。
+如果右子树的高度比总高度小2，那么说明最后的叶子一定在左子树上，那么右子树一定是高为h-2的满二叉树，左子树是一个普通的完全二叉树。
+
+满二叉树节点数 = 2^h-1
+
+而且对于完全二叉树，左子树的高度一定等于总高度-1.
+
+复杂度是O(logN)
+
+```java
+    HashMap<TreeNode, Integer> map = new HashMap<>();
+    public int countNodes(TreeNode h){
+        int height = getHeight(h);
+        if(height==1) return 1;
+        else if(height==0) return 0;
+        return 1 + ((getHeight(h.right)==height-1)?( (1<<(height-1))-1 + countNodes(h.right)):( (1<<(height-2))-1 + countNodes(h.left)));
+    }
+
+    public int getHeight(TreeNode h){
+        if(map.containsKey(h)) return map.get(h);
+        int res = h==null?0:1+getHeight(h.left);
+        map.put(h,res);
+        return res;
+    }
+```
+
+
+求斐波那契数列的第N项：c-p181.1
+
+f(1)=1;
+f(2)=1;
+f(n) = f(n-1)+f(n-2);
+
+给定整数N，代表台阶数，一次可以跨2个台阶或1个，共有多少种走法：c-p181.2
+
+dp[1]=1;
+dp[2]=2;
+
+dp[n]=dp[n-2]+dp[n-1]
+
+
+假设弄成中成熟的母牛每年生1头小母牛，且永远不会死，第一年农场有1头成熟的母牛，第二年开始，母牛开始生小母牛，每只小母牛3年后成熟又可以生小母牛，给定整数N，求出N年后母牛的数量：c-p181.3
+
+对于第N年，所有3年前的牛在今年都可以生一头母牛，并且牛总数要加上两年前新出生的牛和一年前新出生的牛
+dp[1]=1;
+dp[2]=2;
+dp[3]=3
+dp[4] = dp[4-3] * 2 + dp[3]-dp[2] + dp[2]-dp[1];
+dp[n] = dp[n-3] * 2 + dp[n-2]-dp[n-3] + dp[n-1]-dp[n-2];
+
+```java
+    public int getCowCount(int n){
+        if(n<=3){
+            if(n==1) return 1;
+            else if(n==2) return 2;
+            else return 3;
+        }
+        int[] dp = new int[n+1];
+        dp[1]=1;
+        dp[2]=2;
+        dp[3]=3;
+        for(int i=4;i<=n;i++){
+            dp[i] = dp[i-3]*2 + dp[i-2]-dp[i-3]+dp[i-1]-dp[i-2];
+        }
+        return dp[n];
+    }
+```
+
 
 在二叉树中找到一个节点的后继节点：c-p151
 有一种新的二叉树节点，多了一个指向父节点的parent域，头结点的parent指向null，现给一个树中的某个节点node，实现返回node中序遍历后继节点的函数。
@@ -28924,6 +29327,411 @@ public int getHeight(TreeNode h, int[] res){
 
     return 1+Math.max(left, right);
 }
+```
+
+矩阵的最小路径和：c-p187
+
+给一个矩阵，从左上角开始只能向右或向下走，达到右下角位置的最小路径和
+
+dp[i][j] = num[i][j]+Math.min(dp[i-1][j], dp[i][j-1]);
+
+由于只和上面的和左面的有关，所以可以优化为一维数组
+i之前的都是这一层的，i及i之后的都是上一层的
+
+优化空间复杂度为O(col)
+
+```java
+public int getMinPathSum(int[][] m){
+    if(m==null || m.length==0 || m[0].length==0) return 0;
+    int row = m.length;
+    int col = m[0].length;
+    int[] dp = new int[col];
+    for(int i=0;i<row;i++){
+        for(int j=0;j<col;j++){
+            if(i==0 && j==0){
+                dp[j] = m[0][0];
+            }else if(j==0){
+                dp[j] = dp[j-1]+m[i][j];
+            }else if(i==0){
+                dp[j] == dp[j]+m[i][j];
+            }else{
+                dp[j] = m[i][j]+Math.min(dp[j], dp[j-1]);
+            }
+        }
+    }
+    return dp[col-1];
+}
+```
+
+如果类似本题这种需要二维表的动态规划题目，最终目的是想求最优解的具体路径，往往需要完整的动态规划表，但如果只是想求得最优解的值，则可以使用空间压缩的方法。因为空间压缩的方法是滚动更新的，会覆盖之前求解的值，让求解轨迹变得不可回溯。
+
+
+换钱的最少货币数（找零钱）：c-p191.1
+给定数组arr，arr中所有值都为正数且不重复，每个值代表一面值的货币，每种货币可以使用任意张，再给一个整数aim代表要找的钱数，求组成aim的最少货币数
+
+一定要注意，找零的这种题不能一上来就从大到小每个试，尽量让大货币数额多，这是不对的！！！❌
+
+例如，有 1，5，6，8 四种货币，要找11块钱，如果先找8的，则结果是：8，1，1，1，但最少其实应该是 6，5
+
+则做法是：如果有N张货币（arr大小为N），换钱数为aim，则生成动态规划表：dp[N][aim+1]
+dp[i][j]表示，在任意使用arr[0...i]货币的情况下，组成j所需的最小张数
+
+dp[i][j] = min {dp[i-1][j-k * arr[i]]+k} (k>=0)
+可以推导得:
+dp[i][j] = min{dp[i][j-arr[i]]+1, dp[i-1][j]}，如果j-arr[i]<0，或者dp[i][j-arr[i]]没有合理解,直接让dp[i][j]=dp[i-1][j]
+
+任何纸币得到结果0只需要0张；
+
+可以看到仍然可以使用路径压缩：
+dp[j] = min{dp[j-arr[i]]+1, dp[j]}  
+
+
+//更便于理解的方法：对于每个和sum，对它遍历每一个面额的钱，如果dp[sum-coins[i]]!=MAX，则dp[sum] = dp[sum-coins[i]]+1，一个sum遍历完所有的coins后，取过程中的最小值,如果对于所有的coins，sum-coins[i]都不合适，则dp[sum]取MAX
+
+
+```java
+//未路径压缩
+    public int coinChange(int[] coins, int amount) {
+        if(coins==null || coins.length==0 || amount < 0) return -1;
+        int n = coins.length;
+        int[][] dp = new int[n][amount+1];
+
+        for(int j=1;j<=amount;j++){
+            if(j%coins[0]==0){
+                dp[0][j] = j/coins[0];
+            }else{
+                dp[0][j] = Integer.MAX_VALUE;
+            }
+        }
+
+        for(int i=1;i<n;i++){
+            for(int j=0;j<=amount;j++){
+                if(j-coins[i]>=0 && dp[i][j-coins[i]]!=Integer.MAX_VALUE){
+                    dp[i][j] = Math.min(dp[i-1][j], dp[i][j-coins[i]]+1);
+                }else {
+                    dp[i][j] = dp[i-1][j];
+                }
+            }
+        }
+        return dp[n-1][amount]==Integer.MAX_VALUE?-1:dp[n-1][amount];
+    }
+
+//路径压缩
+    public int coinChange(int[] coins, int amount) {
+        if(coins==null || coins.length==0 || amount < 0) return -1;
+        int n = coins.length;
+        int[] dp = new int[amount+1];
+        dp[0] = 0;
+        for(int j=1;j<=amount;j++){
+            if(j-coins[0]>=0 && dp[j-coins[0]]!=Integer.MAX_VALUE){
+                dp[j] = dp[j-coins[0]]+1;
+            }else{
+                dp[j] = Integer.MAX_VALUE;
+            }
+        }
+
+        for(int i=1;i<n;i++){
+            for(int j=1;j<=amount;j++){
+                int tmp = Integer.MAX_VALUE;
+                if(j-coins[i]>=0 && dp[j-coins[i]]!=Integer.MAX_VALUE){
+                    dp[j] = Math.min(dp[j], dp[j-coins[i]]+1);
+                }else{
+                    dp[j] = Math.min(dp[j], tmp);
+                }
+            }
+        }
+        return dp[amount]==Integer.MAX_VALUE?-1:dp[amount];
+    }
+
+//更便于理解的方法：对于每个和sum，对它遍历每一个面额的钱，如果dp[sum-coins[i]]!=MAX，则dp[sum] = dp[sum-coins[i]]+1，一个sum遍历完所有的coins后，取过程中的最小值
+    public int coinChange(int[] coins, int amount) {
+        if(coins==null || coins.length==0 || amount < 0) return -1;
+        int[] dp = new int[amount+1];
+        dp[0] = 0;
+        for(int sum=1;sum<=amount;sum++){
+            dp[sum] = Integer.MAX_VALUE;
+            for(int i=0;i<coins.length;i++){
+                int tmp = dp[sum];
+                if(sum-coins[i]>=0 && dp[sum-coins[i]]!=Integer.MAX_VALUE){
+                    tmp = dp[sum-coins[i]] +1;
+                }
+                dp[sum] = Math.min(dp[sum], tmp);
+            }
+        }
+        return dp[amount];
+    }
+```
+
+
+给定数组arr，arr中所有的值都为正数，每个值仅代表该面值的一张钱，再给定一个整数aim代表要找的钱数，求组成aim的最少货币数，如果无法组成，返回-1：c-p191.2
+如[5,2,3] aim=20：5，2，3元各有1张，无法组成20元，返回-1
+[5,2,5,3] aim=10  5元的有两张，可以组成10元且用钱最少，返回2
+[5,2,5,3] aim=15  所有的钱加起来才能组成15元，返回4
+[5,2,5,3] aim=0  不用任何货币就能组成0，返回0
+
+dp[i][j]是前i-1张货币组成j元所用钱的最少数
+dp[i][0]=0;
+dp[0][j]表示只使用这一张钱能达到的钱数，自然让 dp[0][coins[0]]=1, 其他dp[0][i]都为MAX(除了dp[0][0])
+如果不使用arr[i]就能组成j，则dp[i][j]的值可能等于dp[i-1][j]
+因为arr[i]只有一张不能重复使用，考虑dp[i-1][j-arr[i]]，它代表可以任意使用arr[0..i-1]货币的情况下，组成j-arr[i]的最小张数，因此dp[i][j]可能等于dp[i-1][j-arr[i]]+1，如果j-arr[i]<0,则直接让dp[i][j]=dp[i-1][j]
+
+    //注意！这里路径压缩的方法有点不一样，因为dp[i][j]要用到dp[i-1][j-arr[i]]，也就是上一行的前面的数据，所以这里j的遍历要从后往前走，避免上一行的数据被过早覆盖
+
+```java
+    public int minCoins(int[] arr, int aim){
+        if(arr==null || arr.length==0 || aim<0) return 0;
+        int n = arr.length;
+        int[][] dp = new int[n][aim+1];
+
+        for(int i=0;i<n;i++){
+            dp[i][0] = 0;
+        }
+
+        for(int j=1;j<=aim;j++){
+            if(j==arr[0]){
+                dp[0][j] = 1;
+            }else
+                dp[0][j] = Integer.MAX_VALUE;
+        }
+
+        for(int i=1;i<n;i++){
+            for(int j=1;j<=aim;j++){
+                if(j-arr[i]>=0 && dp[i-1][j-arr[i]]!=Integer.MAX_VALUE){
+                    dp[i][j] = Math.min(dp[i-1][j], dp[i-1][j-arr[i]]+1);
+                }else{
+                    dp[i][j] = dp[i-1][j];
+                }
+            }
+        }
+        return dp[n-1][aim]==Integer.MAX_VALUE?-1:dp[n-1][aim];
+    }
+
+
+    //注意！这里路径压缩的方法有点不一样，因为dp[i][j]要用到dp[i-1][j-arr[i]]，也就是上一行的前面的数据，所以这里j的遍历要从后往前走，避免上一行的数据被过早覆盖
+    public int minCoins(int[] arr, int aim){
+        if(arr==null || arr.length==0 || aim<0) return 0;
+        int n = arr.length;
+        int[] dp = new int[aim+1];
+
+        dp[0]=0;
+
+        for(int j=1;j<=aim;j++){
+            if(j==arr[0]){
+                dp[j] = 1;
+            }else
+                dp[j] = Integer.MAX_VALUE;
+        }
+
+        for(int i=1;i<n;i++){
+            for(int j=aim;j>0;j--){
+                if(j-arr[i]>=0 && dp[j-arr[i]]!=Integer.MAX_VALUE){
+                    dp[j] = Math.min(dp[j], dp[j-arr[i]]+1);
+                }else{
+                    dp[j] = dp[j];
+                }
+            }
+        }
+        return dp[aim]==Integer.MAX_VALUE?-1:dp[aim];
+    }
+
+
+```
+
+换钱的方法数：c-p196
+
+给定数组arr，arr中所有值都为正数且不重复，每个值代表 一种面额的货币，每种面值的货币可以使用任意张，再给定一个整数aim代表要找的钱数，求换钱有多少种方法
+
+》方法一：
+首先想到的就是用trackback求组合数，需要传入start。（暴力递归）
+复杂度是O(aim^N)
+
+```java
+public int coins(int[] arr, int aim){
+    int[] res = new int[1];
+    coins(0, 0, arr, aim, res);
+    return res[0];
+}
+
+public void coins(int start, int cur, int[] arr, int aim, int[] res){
+    if(cur>aim) return;
+    else if(cur==aim){
+        res[0]++;
+        return;
+    }
+    for(int i=start;i<arr.length;i++){
+        coins(i, cur+arr[i], arr, aim, res);
+    }
+}
+```
+
+》方法二：记忆搜索（优化的trackback），在递归过程中，arr始终不变，变得只有start和cur，计算之所以大量，因为中间过程都没有记录下来，只要把start-cur作为k，此时能完成的结果数作为v记录到map中，就能使用之前遍历过的结果,为了更方便理解，把cur改成rest，表示剩下准备处理的数。以start-rest作为key，复用之前的结果
+复杂度是O(N * aim^2)
+
+```java
+public int coins2(int[] arr, int aim){
+    return coins(0, aim, arr, new HashMap<String, Integer>());
+}
+
+public int coins2(int start, int rest, int[] arr, HashMap<String, Integer> map){
+    if(map.containsKey(start+"-"+rest)){
+        return map.get(start+"-"+rest);
+    }
+    int ans = 0;
+    if(rest<0) {
+        ans = 0;
+    }
+    else if(rest==0){
+        ans=1;
+    }else{
+        for(int i=start;i<arr.length;i++){
+            ans += coins(i, rest-arr[i], arr, map);
+        }
+    }
+    map.put(start+"-"+rest, ans);
+    return ans;
+}
+```
+
+》方法三：动态规划：生成行数为N，列数为aim+1的矩阵dp[][] dp[i][j]代表使用arr[0...i]的货币能构成总钱数为j的总方法数
+
+dp[i][0]=1 组成0元的方法数均为1  //这个有点不好想，因为不使用任何货币也算一种方法，所以是1
+dp[0][j]= j%arr[0]==0?j/arr[0]:0;  //j是arr[0]的倍数，则可组成，否则为0
+
+dp[i][j]包含 不使用arr[i]，只使用arr[0..i]组成j的可能性：dp[i-1][j]，
+如果使用arr[i]，则可能性为：dp[i-1][j-k * arr[i]] （一直到 j-k * arr[i]<0为止, k为0时包含了dp[i][j]）
+
+所以dp[i][j] = Σdp[i-1][j-k * arr[i]] (j-k * arr[i]>=0)
+
+如果要使用路径压缩优化空间，二层的遍历也要倒序遍历，因为本层的答案用的都是上一层的结果，用不到本层之前的结果。要注意。
+
+动态规划比较吃空间，当空间吃不消时，可以改用记忆搜索
+
+
+》优化动态规划：对于dp[i-1][j-k* arr[i]],当k为0时，为dp[i-1][j], 
+而当k不为0时，有 dp[i-1][j-1* arr[i]] + dp[i-1][j-2* arr[i]]+... 其实就是dp[i][j-arr[i]]
+因此又可以简化为：dp[i][j] = dp[i-1][j] + dp[i][j-arr[i]] 不过还是得保证j-arr[i]>=0，否则只有前面的项
+
+```java
+public int coins3(int[] arr, int aim){
+    if(arr==null || arr.length==0 || aim<0) return 0;
+    int n = arr.length;
+    int[][] dp = new int[n][aim+1];
+    for(int i=0;i<n;i++){
+        dp[i][0] = 1;
+    }
+
+    for(int j=1;j<=aim;j++){
+        if(j%arr[0]==0){
+            dp[0][j] = 1;
+        }else{
+            dp[0][j]=0;
+        }
+    }
+
+    for(int i=1;i<n;i++){
+        for(int j=1;j<=aim;j++){
+            for(int k=0;k*arr[i]<=j;k++){
+                dp[i][j] += dp[i-1][j-k*arr[i]];
+            }
+        }
+    }
+    return dp[n-1][aim];
+}
+
+
+
+public int coins4(int[] arr, int aim){
+    if(arr==null || arr.length==0 || aim<0) return 0;
+    int n = arr.length;
+    int[][] dp = new int[n][aim+1];
+    for(int i=0;i<n;i++){
+        dp[i][0] = 1;
+    }
+
+    for(int j=1;j<=aim;j++){
+        if(j%arr[0]==0){
+            dp[0][j] = 1;
+        }else{
+            dp[0][j]=0;
+        }
+    }
+
+    for(int i=1;i<n;i++){
+        for(int j=1;j<=aim;j++){
+            dp[i][j] = j-arr[i]>=0?dp[i-1][j]+dp[i][j-arr[i]]:dp[i-1][j];
+            
+        }
+    }
+    return dp[n-1][aim];
+}
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+********************** 多线程题 **************************
+
+2个线程交替打印1到10
+```java
+
+    void alternatePrint(){
+        Semaphore s1 = new Semaphore(1);
+        Semaphore s2 = new Semaphore(0);
+        Thread t1 = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                for (int i=1;i<=10;i+=2){
+                    try {
+                        s1.acquire();
+                        System.out.println("t1:"+i);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }finally {
+                        s2.release();
+                    }
+                }
+            }
+        });
+        t1.start();
+
+
+        Thread t2 = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                for (int i=2;i<=10;i+=2){
+                    try {
+                        s2.acquire();
+                        System.out.println("t2:"+i);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }finally {
+                        s1.release();
+                    }
+                }
+            }
+        });
+        t2.start();
+    }
 ```
 
 
