@@ -5747,12 +5747,16 @@ Note:
 You may assume k is always valid, 1 ≤ k ≤ array's length.
 
 一般遇到这种第k大的，就可以考虑堆排序了，或者快排也行
+但如果不允许修改数组，或者说空间复杂度是O(1),就不能排序了。
 
-无法忍受的是，中国的网上大部分流传的堆排序是错误的，
-在这里找到对的：
-https://www.geeksforgeeks.org/heap-sort/
+如果不能改变数组中，那么就不能使用排序了。使用不断二分的方法
+首先记录数组中的最大值max和最小值min，在max和min中不断进行二分查找，对于每一个mid，
+找到数组中有几个数比它大，当数组中有k-1个数比它大时，说明它如果在数组中，是第k大的元素。
+假设该元素是x。接着遍历数组，找到不大于x的最大值(如果x在数组中，则肯定是x，如果不在数组中，则第k大的元素是比x小的最大元素)
+
 
 ```java
+//方法一，修改数组，建堆
 // Java program for implementation of Heap Sort 
 class Solution {
     public int findKthLargest(int[] nums, int k) {
@@ -5814,6 +5818,54 @@ class Solution {
 }
 
 
+//方法二：不修改数组，使用二分查找，复杂度是nlogn
+class Solution {
+
+    public int findKthLargest(int[] nums, int k) {
+        if(nums==null || nums.length==0 || nums.length<k) return 0;
+        int min = Integer.MAX_VALUE;
+        int max = Integer.MIN_VALUE;
+        for(int i=0;i<nums.length;i++){
+            if(nums[i]>max){
+                max = nums[i];
+            }
+            if(nums[i]<min){
+                min = nums[i];
+            }
+        }
+        int mid=0, low=min, high=max;
+        while (low<high){
+            mid = (low+high)>>1;
+            //每次都都找nums中比mid大的数有多少，如果有k-1个数比它大，说明mid如果放在nums中，就是第k大的
+            int tmp = getNo(mid, nums);
+            if(tmp==k-1) break;
+            else if(tmp<k-1){
+                high = mid;
+            }else{
+                low = mid+1;
+            }
+        }
+
+        //保证ans是数组中小等于mid的最大值
+        int ans = low;
+        for(int i=0;i<nums.length;i++){
+            if(nums[i]>ans && nums[i]<=mid){
+                ans = nums[i];
+            }
+        }
+        return ans;
+    }
+
+    int getNo(int t, int[] nums){
+        int no = 0;
+        for(int i=0;i<nums.length;i++){
+            if(nums[i]>t){
+                no++;
+            }
+        }
+        return no;
+    }
+}
 ```
 
 
@@ -29666,6 +29718,570 @@ public int coins4(int[] arr, int aim){
 }
 ```
 
+# 很重要的是动态规划不要想一蹴而就，在大概规划好数组的意义后，先处理边界情况，一般是dp[i][0]和dp[0][j]的情况，都处理完了，再一步一步慢慢找递推关系。就像上面题一样
+
+
+最长递增子序列：c-p202
+
+给定数组arr，返回arr的最长递增子序列
+
+一般求最长递增子序列长度的办法的动态规划法：O(n^2)
+dp[i] 表示arr[0...i]之间且以arr[i]结尾的最长的递增子序列
+dp[i]初始化为1，表示只有arr[i]一个
+
+dp[i]=1;
+for(int j=0;j< i;j++){
+    if(arr[i]>arr[j])
+        dp[i] = Math.max(dp[i],dp[j]+1);
+}
+
+如果要求具体序列的话，可以在dp的过程中加上一个表示上一个索引的数组pre[i]
+，如pre[i]=x, 表示以arr[i]结尾的最长递增子序列中，arr[i]的上一个数字是arr[x];
+令pre[i]默认为-1，表示没有上一个数字。最后安装pre数组还原出序列
+
+
+
+```java
+    public int[] getLIS(int[] arr){
+        if(arr==null || arr.length==0) return null;
+        int len = arr.length;
+        int[] dp = new int[len];
+        int[] pre = new int[len];
+
+
+        int max = 0;
+        int lastIndex = 0;
+        for(int i=0;i<len;i++){
+            dp[i] = 1;
+            pre[i]=-1;
+            for(int j=0;j<i;j++){
+                if(arr[i]>arr[j]){
+                    if(dp[j]+1>dp[i]){
+                        dp[i] = dp[j]+1;
+                        pre[i] = j;
+                    }
+                }
+            }
+            if(dp[i]>max){
+                lastIndex = i;
+                max = dp[i];
+            }
+        }
+        int p = lastIndex;
+        int[] ans = new int[max];
+        int i=max-1;
+        while(p!=-1){
+            ans[i--] = arr[p];
+            p = pre[p];
+        }
+
+        return ans;
+    }
+```
+
+还原序列的方法2：除了上面用pre来记录上个节点，直接用dp也可以还原序列
+遍历dp数组，找到最大值以及为止，然后从最大值位置开始从右往左遍历，如果对应某一位置i，既有arr[i]< arr[maxi], 又有dp[i]=dp[maxi]-1,说明其可以当做递增子序列的倒数第二个数，然后就可以继续往前走了，直到找到所有的数
+```java
+    public int[] generateLIS(int[] arr, int[] dp){
+        int index = 0;
+        int len = 0;
+        for(int i=0;i<dp.length;i++){
+            if(dp[i]>dp[index]) {
+                index = i;
+                len = dp[i];
+            }
+
+        }
+        int[] ans = new int[len];
+        ans[--len] = arr[index];
+        for(int i=index;i>=0;i--){
+            if(arr[i]<ans[len] && dp[i]==dp[index]-1){
+                ans[--len] = arr[i];
+                index = i;
+            }
+        }
+        return ans;
+    }
+```
+
+
+
+用二分查找来优化： c-p202.2
+先生成一个长度为N的数组ends，初始时ends[0]=arr[0],其他位置上的值为0。生成整型变量right，初始时right=0。
+含义为：遍历过程中，ends[0...right]为有效区，ends[right+1..N-1]为无效区。对有效区的位置b，如果有ends[b]=c，则表示遍历到目前位置，所有长度为b+1的递增序列中，最小的结尾数是c。
+
+对于arr=[2,1,5,3,6,4,8,9,7]，初始时dp[0]=1，ends[0]=2,right=0, ends[0..0]为有效区，ends[0]=2的含义是，在遍历过arr[0]后，所有长度为1的递增序列中（此时只有2），最小的结尾数是2
+遍历到arr[1]=1。ends有效区为ends[0..0]=[2]，在有效区中找到最左边的大于或等于arr[1]的数，发现是ends[0],表示以arr[1]结尾的最长递增子序列只有arr[1],令dp[1]=1,再令ends[0]=1,表示到目前为止，所有长度为1的递增序列中，最小的结尾数是1
+遍历到arr[2]=5,ends有效区=ends[0..0]=[1]，在有效区中找到最左边大于或等于arr[2]的数。发现没有这样的数，表示以arr[2]结尾的最长递增序列长度=ends有效区长度+1,令dp[2]=2。ends整个有效区都没有比arr[2]更大的数，说明发现了比ends有效区长度更长的递增序列，于是把有效区扩大，ends有效区=ends[0..1]=[1,5]
+遍历到arr[3]=3,ends[0..1]=[1,5],在有效区中用二分法找到最左边大于或等于arr[3]的数，发现是ends[1]，表示以arr[3]结尾的最长递增子序列长度为2，令dp[3]=2,然后令ends[1]=3,因为到目前为止，在所有长度为2的递增子序列中，最小的结尾数是3，不再是5
+一直把所有的数都遍历完，ends有效区=ends[0...right]，而ends[0...right]就是最长递增子序列
+
+```java
+    public int[] getLIS(int[] arr){
+        if(arr==null || arr.length==0) return null;
+        int len = arr.length;
+        int[] ends = new int[len];
+        int[] dp = new int[len];
+        dp[0] = 1;
+        int right = 0;
+        ends[0] = arr[0];
+        int m=0,l=0,r=0;
+        for(int i=1;i<len;i++){
+            l=0;
+            r=right;
+            while(r>=l){
+                m = (r+l)>>1;
+                if(arr[i]>ends[m]){
+                    l = m+1;
+                }else{
+                    r = m-1;
+                }
+            }
+            right = Math.max(right,l);
+            ends[l] = arr[i];
+            dp[i] = l+1;
+        }
+        return generateLIS(arr, dp);
+    }
+```
+
+
+汉诺塔问题：c-p206.1
+给一个整数n，代表汉诺塔游戏从小到大放置的n个圆盘，假设开始时所有的圆盘都放在左边的柱子上，想按照规则把所有圆盘移到右边的柱子上，实现函数打印最优移动轨迹
+假设有from柱子，mid柱子和to柱子，都在from的圆盘1到i完全移动到to，最优过程为：
+步骤1为圆盘1到i-1从from移动到mid
+步骤2为单独把圆盘i从from移动到to
+步骤3为把圆盘1到i-1从mid移动到to，如果圆盘只有1个，直接把这个圆盘从from移动到to即可
+
+这个看起来和 c-p14 不一样，左柱子上的可以直接到右柱子而不用经过中间
+
+打印最优移动轨迹
+```java
+public void hanoi(int n){
+    if(n>0){
+        func(n, "left", "mid", "right");
+    }
+}
+
+public void func(int n, String from, String mid, String to){
+    if(n==1){
+        System.out.println("move from " + from + " to " + to);
+    }else{
+        //把上面的1到n-1从左移动到中
+        func(n-1. from, to, mid);
+        //把n从左移动到右
+        func(1, from mid, to);
+        //把1到n-1从中移动到右
+        from(n-1, mid, from, to);
+    }
+}
+```
+
+汉诺塔进阶：c-p206.2
+给定一个整型数组arr，其中只含有1，2，3代表所有圆盘目前的状态，1代表左柱，2代表中柱，3代表右柱，arr[i]的值代表第i+1个圆盘的位置，比如arr[3,3,2,1]代表第1个圆盘在右柱上，第2个圆盘在右柱上，第3个圆盘在中柱上，第4个圆盘在左柱上。如果arr代表的是最优移动轨迹过程中出现的状态，返回arr这种状态是最优移动轨迹中的第几个状态。如果arr不是最优移动轨迹过程中出现的状态，则返回-1。
+
+首先求都在from柱子上的圆盘1到i，如果都移动到to上的最少步骤数，假设为S(i),根据上面的步骤，S(i)=步骤1的步骤总数+1+步骤3的步骤总数=S(i-1)+1+S(i-1) S(1)=1，
+可得到S(i)=2^(i-1)
+
+对于数组arr来说，arr[N-1]表示最大圆盘N在哪个柱子上，情况有以下三种：
+1.圆盘n在左柱子上，说明步骤1或者没有完成，或者已经完成，需要考察圆盘1到n-1的状况
+2.圆盘n在右柱子上，说明步骤1已经完成，起码走完了2^(n-1)-1步，步骤2也已经完成，起码又走了1步，所以当前状况是最优步骤的2^(n-1)步，剩下的步骤怎么确定还得继续考察圆盘1到n-1的状况
+3.圆盘n在中柱上，这是不可能的，最优步骤中不可能让圆盘n处在中柱上，直接返回-1。
+
+所以整个过程可以总结为：对于圆盘1到i来说，如果目标从from到to，那么情况有3种：
+1.圆盘i在from上，需要继续考察圆盘1到i-1的状况，圆盘1到i-1的目标为从from到mid
+2.圆盘i在to上，说明起码走完了2^（i-1）步，剩下的步骤怎么确定还得继续考察圆盘1到i-1的状况，圆盘1到i-1的目标为从mid到to
+3.圆盘i在mid上，直接返回-1
+
+```java
+public int step1(int[] arr){
+    if(arr==null || arr.length==0){
+        return -1;
+    }else{
+        return process(arr, arr.length-1, 1, 2, 3);
+    }
+}
+
+//process是把i从from放到to的过程，arr当前的状态可能是这个过程中的任意一个过程，也可能不是
+public int process(int[] arr, int i, int from, int mid, int to){
+    if(i==-1){
+        return 0;
+    }
+    if(arr[i]!=from && arr[i]!=to){
+        return -1;
+    }
+    if(arr[i]==from){
+        return process(arr, i-1, from, to, mid);
+    }else{
+        int rest = process(arr, i-1, mid, from, to);
+        if(rest==-1)
+            return -1;
+        return (1<<i)+rest;
+    }
+}
+
+```
+
+如果不使用递归：
+```java
+public int step2(int[] arr){
+    if(arr==null || arr.length==0){
+        return -1;
+    }
+    int from = 1;
+    int mid = 2;
+    int to = 3;
+    int i= arr.length-1;
+    int res = 0;
+    int tmp = 0;
+    while(i>=0){
+        if(arr[i]!=from && arr[i]!=to){
+            return -1;
+        }
+        if(arr[i]==to){
+            res+=1<<i;
+            tmp = from;
+            from = mid;
+        }else{
+            tmp = to;
+            to = mid;
+        }
+        mid = tmp;
+        i--;
+    }
+    return res;
+}
+```
+
+最长公共子序列/公共最长子序列：c-p210
+给定两个字符串str1和str2，返回两个字符串的最长公共子序列
+如str1="1A2C3D4B56" str2="B1D23CA45B6A"
+"123456" 或 "12C4B6" 都是最长公共子序列，返回哪个都行
+
+dp[i][j]为 str1[0..i]与str2[0...j]的最长公共子序列长度
+
+dp[0][0] == str1[0]==str2[0]?1:0
+dp[0][j] == max(dp[0][j-1], str1[0]==str2[j]?1:0)
+dp[i][0] == max(dp[i-1][0], str1[i]==str2[0]?1:0)
+
+若str1[i]==str2[j]
+    dp[i][j] = max(dp[i-1][j-1]+1, dp[i][j-1], dp[i-1][j])
+若str1[i]!=str2[j]
+    dp[i][j] = max(dp[i][j-1], dp[i-1][j])
+
+要还原出序列，方法如下:
+1.从矩阵右下角开始，有三种移动方式：向上，向左，向左上。假设移动过程中，i表示此时的行数，j表示此时的列数，同时用一个变量res表示最长公共子序列。
+2.如果dp[i][j]大于dp[i-1][j]和dp[i][j-1],说明之前计算dp[i][j]时，移动选择了决策dp[i-1][j-1]+1,可以确定str1[i]等于str2[j]，且这个字符移动属于最长公共子序列，把这个字符放进res，然后向左上方移动
+3.如果dp[i][j]等于dp[i-1][j]，说明之前在计算dp[i][j]的时候，dp[i-1][j-1]+1这个决策部署必须选择的决策，向上方移动即可
+4.如果dp[i][j]等于dp[i][j-1],与步骤3同理，向左上方移动。
+5.如果dp[i][j]同时等于dp[i][j-1]和dp[i][j-1]，向上还是向左无所谓，选择其中一个即可
+
+
+```java
+    public int[][] getLCS_DP(char[] str1, char[] str2){
+        if(str1==null || str2==null) return null;
+        int len1 = str1.length;
+        int len2 = str2.length;
+        int[][] dp = new int[len1][len2];
+        dp[0][0] = str1[0]==str2[0]?1:0;
+        for(int i=1;i<len1;i++){
+            dp[i][0]=Math.max(dp[i-1][0], str1[i]==str2[0]?1:0);
+        }
+        for(int j=1;j<len2;j++){
+            dp[0][j]=Math.max(dp[0][j-1], str1[0]==str2[j]?1:0);
+        }
+
+        for(int i=1;i<len1;i++){
+            for(int j=1;j<len2;j++){
+                if(str1[i]==str2[j]){
+                    dp[i][j]=Math.max(dp[i-1][j-1]+1, dp[i][j-1]);
+                    dp[i][j] = Math.max(dp[i][j], dp[i-1][j]);
+                }else{
+                    dp[i][j] = Math.max(dp[i][j-1], dp[i-1][j]);
+                }
+            }
+        }
+        return dp;
+    }
+
+    public String getLCS(String str1, String str2){
+        if(str1==null || str2==null || str1.length()==0 || str2.length()==0)
+            return "";
+        char[] s1 = str1.toCharArray();
+        char[] s2 = str2.toCharArray();
+        int m = s1.length-1;
+        int n = s2.length-1;
+        int[][] dp = getLCS_DP(s1, s2);
+        char[] res = new char[dp[m][n]];
+        int index = res.length-1;
+        while(index>=0){
+            if(n>0 && dp[m][n]==dp[m][n-1]){
+                n--;
+            }else if(m>0 && dp[m][n]==dp[m-1][n]){
+                m--;
+            }else{
+                res[index--] = s1[m];
+                m--;
+                n--;
+            }
+        }
+        return String.valueOf(res);
+    }
+
+```
+
+# 子序列可以是不连续的，子串是连续的
+
+
+最长公共子串：c-p213
+给定两个字符串str1和str2，返回两个字符串最长公共子串
+str1="1AB2345CD", str2="12345EF", 返回"2345"
+
+dp[i][j]是str1以str1[i]结尾，str2以str2[j]结尾的最长公共子串长度
+
+dp[0][0] = str1[0]==str2[0]?1:0
+dp[0][j] == str1[0]==str2[j]?1:0
+dp[i][0] == str1[i]==str2[0]?1:0
+
+如果str1[i]!=str2[j]
+    dp[i][j]=0
+如果str1[i]==str2[j]
+    dp[i][j]=dp[i-1][j-1]+1
+
+复原子串：
+遍历dp，记录其中最大值的行和列，比如dp[6][4]=4
+则str[3..6]就是这个最长子序列
+
+
+经典方法需要大小为MxN的矩阵，实际上可以减小到O(1)，因为计算dp[i][j]的时候，只需要dp[i-1][j-1]的值，按照斜线方向（从左上往右下的斜线），只需要常数级变量就可以计算出所有位置的值
+
+
+
+```java
+//方法1：
+    public int[][] getLCS_DP(char[] s1, char[] s2){
+        if(s1==null || s2==null || s1.length==0 || s2.length==0){
+            return null;
+        }
+        int m = s1.length;
+        int n = s2.length;
+        int[][] dp = new int[m][n];
+        dp[0][0] = s1[0]==s2[0]?1:0;
+        for(int i=1;i<m;i++){
+            dp[i][0]=s1[i]==s2[0]?1:0;
+        }
+        for(int j=1;j<n;j++){
+            dp[0][j]=s1[0]==s2[j]?1:0;
+        }
+
+        for(int i=1;i<m;i++){
+            for(int j=1;j<n;j++){
+                if(s1[i]==s2[j]){
+                    dp[i][j]=dp[i-1][j-1]+1;
+                }
+            }
+        }
+        return dp;
+    }
+
+    public String getLCS(String str1, String str2){
+        if(str1==null || str2==null || str1.length()==0 || str2.length()==0){
+            return null;
+        }
+        char[] s1 = str1.toCharArray();
+        char[] s2 = str2.toCharArray();
+        int m = s1.length-1;
+        int n = s2.length-1;
+        int[][] dp = getLCS_DP(s1, s2);
+        int row = 0;
+        int col = 0;
+        for(int i=0;i<m;i++){
+            for(int j=0;j<n;j++){
+                if(dp[i][j]>dp[row][col]){
+                    row=i;
+                    col=j;
+                }
+            }
+        }
+        int len = dp[row][col];
+        StringBuilder builder = new StringBuilder();
+        while(len>0){
+            builder.insert(0, s1[row--]);
+            len--;
+        }
+        return builder.toString();
+    }
+
+
+//方法二：
+
+    public String getLCS2(String str1, String str2){
+        if(str1==null || str2==null || str1.length()==0 || str2.length()==0){
+            return null;
+        }
+        char[] s1 = str1.toCharArray();
+        char[] s2 = str2.toCharArray();
+        int m = s1.length-1;
+        int n = s2.length-1;
+
+        int pre = 0;
+        int i=0,j=0;
+        int tmp = 0;
+        int max = 0;
+        int recordi = -1;
+        //先看第一排每个元素的斜下方一溜
+        while(tmp<n){
+            i=0;
+            j=tmp;
+            while(i<m && j<n){
+                if(s1[i]==s2[j]){
+                    pre +=1;
+                }else{
+                    pre=0;
+                }
+                if(pre>max){
+                    max=pre;
+                    recordi = i;
+                }
+                i++;
+                j++;
+            }
+            tmp++;
+        }
+
+        tmp=1;
+        while(tmp<m){
+            i=tmp;
+            j=0;
+            while(i<m && j<n){
+                if(s1[i]==s2[j]){
+                    pre +=1;
+                }else{
+                    pre=0;
+                }
+                if(pre>max){
+                    max=pre;
+                    recordi = i;
+                }
+                i++;
+                j++;
+            }
+            tmp++;
+        }
+        if(max==0) return "";
+        return str1.substring(recordi-max+1, recordi+1);
+    }
+```
+    
+最小编辑代价：c-p217
+给定两个字符串str1和str2，再给定3个整数ic，dc，rc，分别代表插入、删除和替换一个字符的代价，返回将str1编辑成str2的最小代价
+例如str1="abc", str2="adc" ic=5,dc=3,rc=2
+从abc编辑成adc，把b替换成d是代价最小的，所以返回2
+例如str1="abc", str2="adc" ic=5,dc=3,rc=100
+先删除b，然后插入d是代价最小的，返回8
+
+dp[i][j]是把str1[0..i-1]变成str2[0..j-1]的最小代价 （注意，这里因为要讨论空的问题，所以i对应str1[0..i-1]）
+
+dp[0][0]=0  //空变成空，花费0
+
+dp[0][j]=dp[0][j-1]+ic;
+dp[i][0]=dp[i-1][0]+dc;
+
+//要使用替换的话，先把str1[i-1]变成str2[j-1](代价为0或rc)，然后把str1[0..i-2]变成str2[0..j-2](代价dp[i-1][j-1])
+若str1[i-1]==str2[j-1]：
+    替换：dp[i][j]1=dp[i-1][j-1]  //由于str1[i]==str2[j]，所以最好一个字符不用替换
+若str1[i]!=str2[j]:
+    替换：dp[i][j]1=dp[i-1][j-1]+rc 
+
+插入：dp[i][j]2=dp[i][j-1]+ic   //要使用插入的话，先把str1[0..i-1]变成str2[0...j-2],然后再插入str2[j-1](代价dp[i][j-1]+ic)
+删除：dp[i][j]3=dp[i-1][j]+dc   //要使用删除的的话，先把str1[0..i-2]变成str2[0..j-1],然后再删除str1[i-1](代价dp[i-1][j]+dc)
+
+dp[i][j] = min(dp[i][j]1, dp[i][j]2, dp[i][j]3);
+
+
+```java
+    public int smallestEditPrice(String str1, String str2, int ic, int dc, int rc){
+        char[] s1 = str1.toCharArray();
+        char[] s2 = str2.toCharArray();
+        int m = s1.length;
+        int n = s2.length;
+        int[][] dp = new int[m+1][n+1];
+
+        dp[0][0]=0;
+        for(int i=1;i<=m;i++){
+            dp[i][0]=dp[i-1][0]+dc;
+        }
+        for(int j=1;j<=n;j++){
+            dp[0][j]=dp[0][j-1]+ic;
+        }
+
+        for(int i=1;i<=m;i++){
+            for(int j=1;j<=n;j++){
+                if(s1[i-1]==s2[j-1]){
+                    dp[i][j]=dp[i-1][j-1];
+                }else{
+                    dp[i][j]=dp[i-1][j-1]+rc;
+                }
+                dp[i][j]=Math.min(dp[i][j], dp[i][j-1]+ic);
+                dp[i][j]=Math.min(dp[i][j], dp[i-1][j]+dc);
+                
+            }
+        }
+
+        return dp[m][n];
+
+    }
+```
+
+字符串的交错组成：c-p220
+给定3个字符串str1，str2和aim，如果aim包含且仅包含来自str1和str2的所有字符，且在aim中属于str1的字符之间保持原来在str1中的顺序，属于str2的字符之间保持原来在str2中的顺序，那么称aim是str1和str2的交错组成。实现一个函数，判断aim是否是str1和str2交错组成。
+
+如str1="AB", str2="12", 则"AB12", "A1B2", "A12B", "1A2B"和"1AB2"等都是str1和str2的交错组成
+
+aim的长度一定是M+N，否则直接返回false，然后生成大小为(M+1)x(N+1)的布尔型矩阵dp，dp[i][j]的值代表aim[0..i+j-1]能否被str1[0..i-1]和str2[0..j-1]交错组成。
+
+1.dp[0][0]=true, aim为空串时，当然可以被str1为空串和str2为空串交错组成
+2.dp[i][0]表示aim[0..i-1]能否只被str1[0..i-1]交错组成，如果aim[0..i-1]等于str1[0..i-1]，则令dp[i][0]=true, 否则令dp[i][0]=false
+3.dp[0][j]表示aim[0..j-1]能否只被str2[0..j-1]交错组成，如果aim[0..j-1]等于str2[0..j-1]，则令dp[0][j]=true, 否则令dp[0][j]=false
+4.
+    dp[i-1][j]代表aim[0...i+j-2]能否被str1[0..i-2]和str2[0..j-1]交错组成，如果可以，那么如果再有aim[i+j-1]与str1[i-1]相等，说明str1[i-1]可以作为交错组成aim[0...i+j-1]的最后一个字符，令dp[i][j]=true。
+    dp[i][j-1]代表aim[0...i+j-2]能否被str1[0..i-1]和str2[0..j-2]交错组成，如果可以，那么如果再有aim[i+j-1]与str2[j-1]相等，说明str2[j-1]可以作为交错组成aim[0...i+j-1]的最后一个字符，令dp[i][j]=true。
+    如果上述两种情况都不满足，则返回dp[i][j]=false
+
+```java
+
+    public boolean isCross(String str1, String str2, String aim){
+        if(aim==null || aim.length()==0) return true;
+        if(str1==null && str2==null) return false;
+        if(str1==null) return str2.equals(aim);
+        if(str2==null) return str1.equals(aim);
+
+        if(str1.length()+str2.length()!=aim.length()) return false;
+
+        char[] s1= str1.toCharArray();
+        char[] s2 = str2.toCharArray();
+        char[] a = aim.toCharArray();
+        int m = s1.length;
+        int n = s2.length;
+        boolean[][] dp = new boolean[m+1][n+1];
+
+        dp[0][0]=true;
+        for(int i=1;i<=m;i++){
+            dp[i][0] = aim.substring(0, i).equals(str1.substring(0,i));
+        }
+        for(int j=1;j<=n;j++){
+            dp[0][j] = aim.substring(0, j).equals(str2.substring(0,j));
+        }
+
+        for(int i=1;i<=m;i++){
+            for(int j=1;j<=n;j++){
+                dp[i][j] = (dp[i-1][j] && a[i+j-1]==s1[i-1]) || (dp[i][j-1] && a[i+j-1]==s2[j-1]);
+
+            }
+        }
+        return dp[m][n];
+    }
+```
 
 
 
@@ -29689,7 +30305,10 @@ public int coins4(int[] arr, int aim){
 
 
 
-********************** 多线程题 **************************
+
+
+
+********************** dxc 多线程题 **************************
 
 2个线程交替打印1到10
 ```java
