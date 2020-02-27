@@ -9512,56 +9512,75 @@ Explanation: It could be decoded as "BZ" (2 26), "VF" (22 6), or "BBF" (2 2 6).
 但这种做法会超时
 
 考虑动态规划
-dp[i]是以 第i个数字结尾的字符串能转换的可能数
-dp[0]=1
-dp[1]=1
 
-（str[i-1]是第i个字符）
-当str[i-1]是0时，dp[i] = dp[i-2] //此时s[i-2, i-1]必是合法的数
-当str[i-1]不是0时
-    若s[i-2, i-1]是合法的数(即str[i-2]不是0， 且s[i-2, i-1]<=26)，则当s[i-2,i-1]作为一个数时，可能性数为dp[i-2];当str[i-1]单独作为一个数时，可能性为dp[i-1]
-                         dp[i] = dp[i-2] + dp[i-1]
-    若s[i-2, i-1]不是合法的数，则只能str[i-1]单独作为一个数
-                         dp[i] = dp[i-1]
+如str="1111", 转换出的结果有AAAA,LAA,ALA,AAL,LL 返回5
+令dp[i]为str[0...i]转成的最大个数
 
-这样dp的长度就得为len+1, 最终结果为dp[len]
+dp[0]=(str[0]>=1 && str[0]<=9) ? 1:0
 
+如果dp[0]=0，则整体一定转换不成功
 
+若str[i]==0
+    若str[i-1, i]满足条件，dp[i]=dp[i-2]
+否则：
+    dp[i] = 0 //初始化
+    若str[i]满足条件 ：dp[i] += dp[i-1]
+    若str[i-1, i]满足条件，dp[i] += dp[i-2]
+
+判断str是否满足条件的函数：
+    
+    //注意如果出现前导0，一定不满足
+    public boolean isValid(String s){
+        try{
+            int t = 0;
+            for(int i=0;i<s.length();i++){
+                //如果出现前导0，则一定不成立
+                if(t==0 && s.charAt(i)=='0') return false;
+                t = t*10 + s.charAt(i) - '0';
+            }
+            return (t<=26 && t>=1);
+        }catch(Exception e){
+            return false;
+        }
+    }
 
 
 ```java
 class Solution {
-    public int numDecodings(String s) {
+   public int numDecodings(String s) {
+        if(s==null || s.length()==0) return 0;
         int len = s.length();
-        if(len==0 || Integer.valueOf(s.substring(0,1))==0) return 0;
-        int[] dp = new int[len+1];
+        int[] dp = new int[len];
 
-        //加入一个0，让后面的好算一点
-        dp[0] = 1;
-        dp[1] = 1;
+        dp[0] = isValid(s.substring(0,1))?1:0;
+        if(dp[0]==0) return 0;
 
-        //i是dp的索引，index是s的索引， i对应index， index=i-1
-        for(int i=2;i<len+1;i++){
-            int index = i-1;
-            if(Integer.valueOf(s.substring(index,index+1))==0){
-                if(Integer.valueOf(s.substring(index-1,index))==0 ||
-                        Integer.valueOf(s.substring(index-1,index)) > 2){ //0前面又是0，或者比2大的数，则非法,返回0
-                    return 0;
-                }
-                dp[i] = dp[i-2];
-            }else{
-                if(Integer.valueOf(s.substring(index-1,index+1)) <= 26 && 
-                    Integer.valueOf(s.substring(index-1,index))!=0){
-                    dp[i] = dp[i-2] + dp[i-1];
-                }else{
-                    dp[i] = dp[i-1];
-                }
+        for(int i=1;i<len;i++){
+            if(isValid(s.substring(i-1, i+1))){
+                dp[i] += i-2>=0?dp[i-2]:1;
+            }
+            if(isValid(s.substring(i,i+1))){
+                dp[i] += dp[i-1];
             }
         }
-        return dp[len];
+        return dp[len-1];
     }
 
+    public boolean isValid(String s){
+        try{
+            int t = 0;
+            for(int i=0;i<s.length();i++){
+                //如果出现前导0，则一定不成立
+                if(t==0 && s.charAt(i)=='0') return false;
+                t = t*10 + s.charAt(i) - '0';
+            }
+            return (t<=26 && t>=1);
+        }catch(Exception e){
+            return false;
+        }
+    }
 }
+
 ```
 
 103. Binary Tree Zigzag Level Order Traversal
@@ -26466,6 +26485,67 @@ public class Main {
 }
 ```
 
+b38：
+一串数字，用五个星号分隔成六段，每段的数值大小不可以大于600，打印出所有可能的结果
+使用trackback，这一题再次提个醒，不是所有的trackback都要用到循环的，要视具体情况而定。
+
+直接使用递归，每次要判断当前数字是不是满足条件(包括前导0的判断和数字值的判断)，如果满足再把当前数字加入list往下传，不满足就不传。递归结束后要remove本次的数字，方便下次数字添加
+
+```java
+    public void func(String s){
+        if(s==null || s.length()<6) return;
+        trackback(s, 0, new ArrayList<>());
+    }
+
+    private void print(ArrayList<Integer> list){
+        StringBuilder builder = new StringBuilder();
+        for(int i=0;i<list.size();i++){
+            builder.append(list.get(i)).append('*');
+        }
+        builder.deleteCharAt(builder.length()-1);
+        System.out.println(builder.toString());
+    }
+
+
+    public void trackback(String str, int start, ArrayList<Integer> list) {
+        int len = str.length();
+        if(start<len && list.size()>=6){
+            return;
+        }
+
+        if(start==len && list.size()==6){
+            print(list);
+            return;
+        }
+
+        int i = start;
+        if (i<len && isValid(str.substring(i, i + 1))) {
+            list.add(Integer.valueOf(str.substring(i, i + 1)));
+            trackback(str, i + 1, list);
+            list.remove(list.size() - 1);
+        }
+        if (i+1<len && isValid(str.substring(i, i + 2))) {
+            list.add(Integer.valueOf(str.substring(i, i + 2)));
+            trackback(str, i + 2, list);
+            list.remove(list.size() - 1);
+        }
+        if (i+2<len && isValid(str.substring(i, i + 3))) {
+            list.add(Integer.valueOf(str.substring(i, i + 3)));
+            trackback(str, i + 3, list);
+            list.remove(list.size() - 1);
+        }
+    }
+
+    public boolean isValid(String s) {
+        int res = 0;
+        for (int i = 0; i < s.length(); i++) {
+            //一旦出现前导0，直接返回
+            if (res == 0 && s.charAt(i) == '0') return false;
+            res = res * 10 + s.charAt(i) - '0';
+        }
+        return res <= 600;
+    }
+```
 
 
 
@@ -30280,6 +30360,217 @@ aim的长度一定是M+N，否则直接返回false，然后生成大小为(M+1)x
             }
         }
         return dp[m][n];
+    }
+```
+
+龙与地下城游戏：c-p223
+给一个二维数组，含义是一张地图，如果是负数，说明骑士要损失这么多的血量，如果是非负数，可以让骑士回复这么多血量，，骑士从左上角走到右下角，走到任何一个位置，血量都不能少于1。为了保证最终能见到公主，最少的初始血量是多少
+
+从右下角倒推，dp[i][j]是进入map[i][j]要保证的最少血量，这个值必须大等于1
+一个位置可以往下和往右走，只需保证其中一个的最低血量即可
+比如dp[i][j], dp[i][j+1]代表要进入map[i][j+1]前的最低血量， dp[i+1][j]代表要进入map[i+1][j]前的最低血量。
+
+dp[i][j] = min(dp[i][j+1], dp[i+1][j])-map[i][j]
+如果上述情况得到dp[i][j]<1, 则要让dp[i][j]=1
+
+注意，这里容易想错一点：如果map[i][j]>=0，要是直接让dp[i][j]=min(dp[i+1][j], dp[i][j+1])
+就不对了，因为map[i][j]中有回血瓶，只要加了这个血瓶能让到达下一个状态即可，当前状态不一定要那么多血量，所以不能直接取min(dp[i+1][j], dp[i][j+1])。
+
+初始情况：
+    map[m][n]>=0 dp[m][n]=1
+    map[m][n]<0 dp[m][n]=1+abs(map[m][n])
+
+```java
+    public int getInitHP(int[][] map){
+        if(map==null || map.length==0 || map[0].length==0) return 1;
+        int m = map.length;
+        int n = map[0].length;
+
+        int[][] dp = new int[m][n];
+        dp[m-1][n-1] = map[m-1][n-1]>=0?1:(1+Math.abs(map[m-1][n-1]));
+
+        for(int i=m-1;i>=0;i--){
+            for(int j=n-1;j>=0;j--){
+                if(i==m-1 && j==n-1) continue;
+                if(i+1==m){
+                    dp[i][j]=dp[i][j+1]-map[i][j];
+                }
+                else if(j+1==n){
+                    dp[i][j]=dp[i+1][j]-map[i][j];
+                }else{
+                    int tmp = Math.min(dp[i+1][j], dp[i][j+1]);
+                    dp[i][j]=tmp-map[i][j];
+                }
+                if(dp[i][j]<1) dp[i][j]=1;
+            }
+        }
+        return dp[0][0];
+    }
+```
+
+
+数字字符串转换为字母组合的种数：c-p225
+给定一个字符串str，str全部由数字字符组成，如果str中某一个或某相邻两个字符组成的子串值在1-26之间，则这个子串可以转换为一个字符，规定“1”转换为A，“2”转换为B。。。“26”转换为Z，写一个函数，求str有多少种不同的返回种数。
+
+如str="1111", 转换出的结果有AAAA,LAA,ALA,AAL,LL 返回5
+令dp[i]为str[0...i]转成的最大个数
+
+dp[0]=(str[0]>=1 && str[0]<=9) ? 1:0
+
+如果dp[0]=0，则整体一定转换不成功
+
+若str[i]==0
+    若str[i-1, i]满足条件，dp[i]=dp[i-2]
+否则：
+    dp[i] = 0 //初始化
+    若str[i]满足条件 ：dp[i] += dp[i-1]
+    若str[i-1, i]满足条件，dp[i] += dp[i-2]
+
+判断str是否满足条件的函数：
+    
+    //注意如果出现前导0，一定不满足
+    public boolean isValid(String s){
+        try{
+            int t = 0;
+            for(int i=0;i<s.length();i++){
+                //如果出现前导0，则一定不成立
+                if(t==0 && s.charAt(i)=='0') return false;
+                t = t*10 + s.charAt(i) - '0';
+            }
+            return (t<=26 && t>=1);
+        }catch(Exception e){
+            return false;
+        }
+    }
+
+
+```java
+class Solution {
+   public int numDecodings(String s) {
+        if(s==null || s.length()==0) return 0;
+        int len = s.length();
+        int[] dp = new int[len];
+
+        dp[0] = isValid(s.substring(0,1))?1:0;
+        if(dp[0]==0) return 0;
+
+        for(int i=1;i<len;i++){
+            if(isValid(s.substring(i-1, i+1))){
+                dp[i] += i-2>=0?dp[i-2]:1;
+            }
+            if(isValid(s.substring(i,i+1))){
+                dp[i] += dp[i-1];
+            }
+        }
+        return dp[len-1];
+    }
+
+    public boolean isValid(String s){
+        try{
+            int t = 0;
+            for(int i=0;i<s.length();i++){
+                //如果出现前导0，则一定不成立
+                if(t==0 && s.charAt(i)=='0') return false;
+                t = t*10 + s.charAt(i) - '0';
+            }
+            return (t<=26 && t>=1);
+        }catch(Exception e){
+            return false;
+        }
+    }
+}
+
+```
+
+表达式得到期望结果的组成总数：c-p228
+给定一个只由0(假)、1（真）、&（逻辑与）、|（逻辑或）、^（异或）五种字符组成的字符串express，再给定一个布尔值desired。返回express能有多少种组合方式，可以达到desired的结果。
+
+例如express = 1^0|0|1 desired=false
+只有1^((0|0)|1) 和 1^(0|(0|1))的组合可以得到false，返回2
+express=1，desired=false
+无组合可得到false，返回0
+
+首先判断表达式是否合法，合法的表达式要求以下3点：
+1.表达式的长度必须是奇数
+2.表达式下标的偶数位置的字符一定是0或者1
+3.表达式下标奇数位置的字符一定是&或|或^
+
+遍历字符串，每遍历到一个逻辑运算符(&，|，^)，就会把原字符串分成两部分，，再计算这两部分各自要得到一个布尔值的种数
+例如，逻辑运算符是&，目标是true，那就计算它两边各自能成为true的总数，然后乘起来。
+用map保存每个字符串和desired对应的值（双map）,使用“字符串+desired”作为key，因为二者没有重复的地方，所以可以直接连起来
+
+
+```java
+
+    HashMap<String, Integer> map = new HashMap<>();
+    public int getCompareCount(String s, boolean desired){
+        if(map.containsKey(s+desired)) {
+            return map.get(s+desired);
+        }
+        if(!isValid(s) || s==null || s.length()==0) return 0;
+
+        if(s.length()==1){
+            boolean tmp = s.charAt(0)=='1';
+            if(tmp==desired) return 1;
+            else return 0;
+        }
+
+        int res = 0;
+        for(int i=0;i<s.length();i++){
+            char c = s.charAt(i);
+            if(c=='&' || c=='|' || c=='^'){
+                int leftTrue = getCompareCount(s.substring(0, i), true);
+                int leftFalse = getCompareCount(s.substring(0, i), false);
+                int rightTrue = getCompareCount(s.substring(i+1), true);
+                int rightFalse = getCompareCount(s.substring(i+1), false);
+
+                if(c=='&'){
+                    if(desired){
+                        res += leftTrue * rightTrue;
+                    }else{
+                        res += leftTrue * rightFalse;
+                        res += leftFalse * rightTrue;
+                        res += leftFalse * rightFalse;
+                    }
+                }
+
+                if(c=='|'){
+                    if(desired){
+                        res += leftTrue * rightTrue;
+                        res += leftTrue * rightFalse;
+                        res += leftFalse * rightTrue;
+                    }else{
+                        res += leftFalse * rightFalse;
+                    }
+                }
+
+                if(c=='^'){
+                    if(desired){
+                        res += leftTrue * rightFalse;
+                        res += leftFalse * rightTrue;
+                    }else{
+                        res += leftTrue * rightTrue;
+                        res += leftFalse * rightFalse;
+                    }
+                }
+            }
+        }
+        map.put(s+desired, res);
+        return res;
+    }
+
+    public boolean isValid(String express){
+        int len = express.length();
+        if((len&1)==0) return false;
+        for(int i=0;i<len;i++){
+            char c = express.charAt(i);
+            if((i&1)==0){
+                if(c!='1' && c!='0') return false;
+            }else{
+                if(c!='&' && c!='|' && c!='^') return false;
+            }
+        }
+        return true;
     }
 ```
 
