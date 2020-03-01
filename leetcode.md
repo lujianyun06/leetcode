@@ -114,7 +114,7 @@ class Solution {
 }
 ```
 
-## 两数做加法进位只能进1！！！
+## 两数做加法进位只能进1！！！（不论是几进制，两数做加法只能进位1，但3个及以上就不一定了，可能进位更多）
 
 * * *
 
@@ -4570,7 +4570,7 @@ class Solution {
         int maxSequence = 0;
         for(int i=0;i<nums.length;i++){
             int cur = nums[i];
-            if(!set1.contains(cur-1)){ //说明它以及被检查过了
+            if(!set1.contains(cur-1)){ //说明它要么在后面会被检查到，要么已经检查完了，取决于cur-1在cur的前还是后。总之cur就不用管了
                 int sequenceLen = 0;
                 while(set1.contains(cur)){
                     sequenceLen += 1;
@@ -9234,7 +9234,7 @@ Output: 2
 Explanation: The square root of 8 is 2.82842..., and since 
              the decimal part is truncated, 2 is returned.
 
-计算平方根，有两种办法：
+计算平方根（开方/根号），有两种办法：
 
 一是二分搜索，二是牛顿迭代法。
 
@@ -22740,7 +22740,139 @@ class Solution {
 }
 ```
 
+排成一条线的纸牌博弈问题：c-p233
+给定一个整型数组arr，代表数值不同的纸牌排成一条线，玩家A和玩家B依次拿走每张纸牌，规定玩家A先拿，玩家B后拿，但是每个玩家每次只能拿走最左或最右的纸牌，玩家A和玩家B都很聪明，请返回最后胜利者的分数
 
+例如arr=[1,2,100,4]
+开始时玩家A只能拿走1或4，若A拿走1，则排列变为[2,100,4],接下来B可以拿走2或4，然后继续轮到A，如果开始时A先拿走4，则排列变为[1,2,100]，接下来B可以拿走1或100，然后继续轮到A，A作为聪明的人不会先拿4，因为拿走4后B会拿走100.所以玩家A会先拿1，让排列变成[2,100,4]，接下来玩家B不管怎么选，100都会被玩家A拿走。玩家A会获胜，分数为101.所以返回101。
+
+arr=[1,100,2],开始时玩家A不管先拿1还是2，B作为聪明人，都会把100拿走，B会获胜，分数为100，所以返回100
+
+递归的方法。定义递归函数f(i,j),表示如果arr[i..j]这个排列上的纸牌被聪明人先拿，最终能得到什么分数。定义递归函数s(i,j)，表示如果arr[i..j]这个排列上的纸牌被聪明人后拿，最终能获得什么分数。
+
+首先分析f(i..j)，具体过程如下：
+1.如果i==j，即arr[i..j]上只剩一张纸牌，当然会被先拿纸牌的人拿走，所以返回arr[i]
+2.如果i!=j, 当前拿牌的人有两种选择，要么拿走arr[i],要么拿走arr[j]。如果拿走arr[i],那么排列将剩下arr[i+1,j]。对当前的玩家来说，面对arr[i+1..j]排列的纸牌，他成了后拿的人，所以后续他能获得的分数为s(i+1,j)，如果先拿走arr[j]，那么排列剩下arr[i..j-1]。面对arr[i..j-1]，他成了后拿的人，为了后续他能获得的分数为s(i,j-1)，作为聪明人，必然会在两种决策中选最优的，所以返回max{arr[i]+s(i+1,j), arr[j]+s(i,j-1)}。
+
+然后分析s(i,j)，具体过程如下：
+1.如果j==i，即arr[i..j]只剩一张纸牌，后拿纸牌的人必然什么也得不到。返回0
+2.如果i!=j。根据函数s的定义，玩家的对手会先拿牌，对手要么拿走arr[i]，要么拿走arr[j]。如果对手拿走arr[i]，那么排列将剩下arr[i+1..j]，然后轮到玩家先拿。如果对手拿走arr[j]，那么排列将剩下arr[i..j-1],然后轮到玩家先拿。对手也是聪明的人，所以必然会把最差的情况留给玩家。所以返回min{f(i+1,j), f(i,j-1)}
+
+```java
+    public int win1(int[] arr){
+        if(arr==null || arr.length==0){
+            return 0;
+        }
+        return Math.max(f(arr, 0, arr.length-1), s(arr, 0, arr.length-1));
+    }
+
+    public int f(int[] arr, int i, int j){
+        if(i==j){
+            return arr[i];
+        }
+        return Math.max(arr[i]+s(arr, i+1, j), arr[j]+s(arr, i, j-1));
+    }
+
+    public int s(int[] arr, int i, int j){
+        if(i==j){
+            return 0;
+        }
+        return Math.min(f(arr, i+1, j), f(arr, i, j-1));
+    }
+
+```
+
+根据递归的方法，很明显可以使用动态规划来改进：
+i依赖i+1，j依赖j-1，所以i要倒序，j要正序
+f[i][j]=Math.max(arr[i]+s[i+1][j], arr[j]+s[i][j-1]);
+s[i][j]=Math.min(f[i+1][j], f[i][j-1]);
+
+```java
+    public int win2(int[] arr){
+        if(arr==null || arr.length==0){
+            return 0;
+        }
+        int len = arr.length;
+        int[][] f = new int[arr.length][arr.length];
+        int[][] s = new int[arr.length][arr.length];
+        for(int j=0;j<arr.length;j++){
+            f[j][j] = arr[j];
+            for(int i=j-1;i>=0;i--){
+                f[i][j]=Math.max(arr[i]+s[i+1][j], arr[j]+s[i][j-1]);
+                s[i][j]=Math.min(f[i+1][j], f[i][j-1]);
+            }
+        }
+        return Math.max(f[0][len-1], s[0][len-1]);
+    }
+```
+
+跳跃游戏：c-p235
+给定数组arr，arr[i]=k代表可以从位置i向右跳1-k个距离，比如arr[2]=3,代表位置2可以跳到位置3，位置4，位置5.如果从位置0出发，返回最少跳几次能到arr最后的位置上
+
+dp[i]为最少跳几次跳到索引i处
+dp[i] = min(dp[j]+1)  且dp[j]>=i-j
+这样的话复杂度是O(N^2)
+
+O(N)的做法如下：
+1.设dump，表示目前跳了多少步，
+cur代表如果只能跳jump步，最远能够达到的位置。
+next代表如果再多跳一步，最远到达的位置
+2.从左到右遍历arr，假设遍历到位置i
+    1.如果cur>=i，说明跳jump步可以到达位置i，此时什么都不用做
+    2.如果cur< i, 说明只跳jump步不能到达位置i，需要多跳一步才行。此时令jump++，cur=next，表示多跳了一步，cur更新为跳jump+1步能够达到的位置，即next
+    3.将next更新为math.max(next, i+arr[i])，表示下一次多跳一步能到达的最远位置
+3.最终返回jump即可
+
+
+```java
+public int jump(int[] arr){
+    if(arr==null || arr.length==0){
+        return 0;
+    }
+    int jump = 0;
+    int cur = 0;
+    int next = 0;
+    for(int i=0;i<arr.length;i++){
+        if(cur<i){
+            jump++;
+            cur = next;
+        }
+        next = Math.max(next, i+arr[i]);
+    }
+    return jump;
+}
+```
+
+数组中的连续最长序列：c-p236
+给定无序数组arr，返回其中最长的连续序列的长度
+如arr=[100,4,200,1,3,2],最长连续序列为[1,2,3,4]，返回4
+先把数组全部放到一个set中，表示全集，
+再创建一个set(visited)存放已经遍历过的数字。然后对数组进行遍历
+遍历到arr[i]时，如果arr[i]-1在visited中，则跳过，说明arr[i]所在的最长的子序列一定已经被检查过了。否则依次看arr[i], arr[i]+1，arr[i]+2...是否在set中，直到不在set中，每找到一个数，就把它加入到visited中，
+
+时间复杂度O(N), 空间复杂度O(N)
+```java
+public int longestSerialSequence(int[] arr){
+    if(arr==null || arr.length==0) return 0;
+    HashSet<Integer> set = new HashSet<>();
+    for(int i:arr){
+        set.add(i);
+    }
+    int res = 0;
+    for(int i:arr){
+        if(!set.contains(i-1)){ //如果i-1在，说明i要么在后面会被检查到，要么已经检查完了，取决于i-1在i的前还是后。总之cur就不用管了
+            int cnt = 0;
+            int tmp = i;
+            while(set.contains(tmp)){
+                cnt++;
+                tmp++;
+            }
+            res = Math.max(cnt, res);
+        }
+    }
+    return res;
+}
+```
 
 
 
@@ -26546,6 +26678,102 @@ b38：
         return res <= 600;
     }
 ```
+
+62进制数的加法：b39
+
+把0-9，a-z，A-Z 字符串组成62进制数，实现两个62进制数的加法
+
+```java
+    public static String add(String a1, String a2){
+        if(a1==null || a2==null) return "";
+        int len1 = a1.length();
+        int len2 = a2.length();
+
+        StringBuilder builder1 = new StringBuilder(a1).reverse();
+        StringBuilder builder2 = new StringBuilder(a2).reverse();
+        a1 = builder1.toString();
+        a2 = builder2.toString();
+
+        int c = 0;
+        StringBuilder builder = new StringBuilder();
+        int i=0;
+        for(;i<len1 && i<len2; i++){
+            char c1 = a1.charAt(i);
+            char c2 = a2.charAt(i);
+            int i1=getNumber(c1);
+            int i2=getNumber(c2);
+            int res = i1+i2+c;
+            if(res>=62){
+                c=1;
+            }else
+                c=0;
+            char cc = int2Char(res%62);
+            builder.insert(0,cc);
+        }
+        if(i<len1){
+            for(;i<len1;i++){
+                char c1 = a1.charAt(i);
+                int i1 = getNumber(c1);
+                int res = i1+c;
+                if(res>=62){
+                    c = 1;
+                }else
+                    c=0;
+                char cc = int2Char(res%62);
+                builder.insert(0,cc);
+            }
+        }else if(i<len2){
+            for(;i<len2;i++){
+                char c2 = a2.charAt(i);
+                int i2 = getNumber(c2);
+                int res = i2+c;
+                if(res>=62){
+                    c = 1;
+                }else
+                    c=0;
+                char cc = int2Char(res%62);
+                builder.insert(0,cc);
+            }
+        }
+        if(c==1)
+            builder.insert(0, '1');
+
+        return builder.toString();
+
+    }
+
+    public static int getNumber(char c){
+        if(c>='0' && c<='9'){
+            return c-'0';
+        }else if(c>='a' && c<='z'){
+            return c-'a'+10;
+        }else {
+            return c-'A'+ 36;
+        }
+    }
+
+    public static char int2Char(int i){
+        if(i>=0 && i<=9){
+            return (char)(i+'0');
+        }else if(i>=10 && i<=35){
+            return (char)((i-10)+'a');
+        }else{
+            return (char)((i-36)+'A');
+        }
+    }
+```
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
