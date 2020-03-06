@@ -7486,7 +7486,7 @@ s = "2[abc]3[cd]ef", return "abcabccdcdcdef".
 如果是数字，加入数字栈，这里要注意对10以上的数字，要循环直到不是数字
 如果是字母，则直接附加到字符串栈顶
 如果是[,栈顶加一个""，作为括号内外的分隔符，再下面的字符串就要往它上附加了，
-如果是]，数字栈顶出栈为x，字符串栈顶的出栈，做x倍数，然后加到字符栈顶
+如果是]，数字栈顶出栈为x，字符串栈顶的出栈，做x倍数，然后附加到字符栈顶
 
 ```java
 class Solution {
@@ -21577,7 +21577,7 @@ class Solution {
             if (num.charAt(0) == '0' && i > 1) return false; //若有前导0
             BigInteger x1 = new BigInteger(num.substring(0, i)); //取(0,i)
 
-            //显然两个加数的长度都不能大于和的最大长度（两个加数的长度分别为i和j，它们两和的长度一定不小于它们，且字符串剩下的可用长度是len-（i+j））
+            //显然两个加数的长度都不能大于和的最大长度（两个加数的长度分别为i和j，它们两和的长度一定不小于它们中的大值，且字符串剩下的可用长度是len-（i+j））
             //这个就是它们和的长度的上限
             for(int j=1;Math.max(i,j)<=len-(j+i);j++){
                 //j是第二个数字的长度
@@ -22739,150 +22739,6 @@ class Solution {
     }
 }
 ```
-
-排成一条线的纸牌博弈问题：c-p233
-给定一个整型数组arr，代表数值不同的纸牌排成一条线，玩家A和玩家B依次拿走每张纸牌，规定玩家A先拿，玩家B后拿，但是每个玩家每次只能拿走最左或最右的纸牌，玩家A和玩家B都很聪明，请返回最后胜利者的分数
-
-例如arr=[1,2,100,4]
-开始时玩家A只能拿走1或4，若A拿走1，则排列变为[2,100,4],接下来B可以拿走2或4，然后继续轮到A，如果开始时A先拿走4，则排列变为[1,2,100]，接下来B可以拿走1或100，然后继续轮到A，A作为聪明的人不会先拿4，因为拿走4后B会拿走100.所以玩家A会先拿1，让排列变成[2,100,4]，接下来玩家B不管怎么选，100都会被玩家A拿走。玩家A会获胜，分数为101.所以返回101。
-
-arr=[1,100,2],开始时玩家A不管先拿1还是2，B作为聪明人，都会把100拿走，B会获胜，分数为100，所以返回100
-
-递归的方法。定义递归函数f(i,j),表示如果arr[i..j]这个排列上的纸牌被聪明人先拿，最终能得到什么分数。定义递归函数s(i,j)，表示如果arr[i..j]这个排列上的纸牌被聪明人后拿，最终能获得什么分数。
-
-首先分析f(i..j)，具体过程如下：
-1.如果i==j，即arr[i..j]上只剩一张纸牌，当然会被先拿纸牌的人拿走，所以返回arr[i]
-2.如果i!=j, 当前拿牌的人有两种选择，要么拿走arr[i],要么拿走arr[j]。如果拿走arr[i],那么排列将剩下arr[i+1,j]。对当前的玩家来说，面对arr[i+1..j]排列的纸牌，他成了后拿的人，所以后续他能获得的分数为s(i+1,j)，如果先拿走arr[j]，那么排列剩下arr[i..j-1]。面对arr[i..j-1]，他成了后拿的人，为了后续他能获得的分数为s(i,j-1)，作为聪明人，必然会在两种决策中选最优的，所以返回max{arr[i]+s(i+1,j), arr[j]+s(i,j-1)}。
-
-然后分析s(i,j)，具体过程如下：
-1.如果j==i，即arr[i..j]只剩一张纸牌，后拿纸牌的人必然什么也得不到。返回0
-2.如果i!=j。根据函数s的定义，玩家的对手会先拿牌，对手要么拿走arr[i]，要么拿走arr[j]。如果对手拿走arr[i]，那么排列将剩下arr[i+1..j]，然后轮到玩家先拿。如果对手拿走arr[j]，那么排列将剩下arr[i..j-1],然后轮到玩家先拿。对手也是聪明的人，所以必然会把最差的情况留给玩家。所以返回min{f(i+1,j), f(i,j-1)}
-
-```java
-    public int win1(int[] arr){
-        if(arr==null || arr.length==0){
-            return 0;
-        }
-        return Math.max(f(arr, 0, arr.length-1), s(arr, 0, arr.length-1));
-    }
-
-    public int f(int[] arr, int i, int j){
-        if(i==j){
-            return arr[i];
-        }
-        return Math.max(arr[i]+s(arr, i+1, j), arr[j]+s(arr, i, j-1));
-    }
-
-    public int s(int[] arr, int i, int j){
-        if(i==j){
-            return 0;
-        }
-        return Math.min(f(arr, i+1, j), f(arr, i, j-1));
-    }
-
-```
-
-根据递归的方法，很明显可以使用动态规划来改进：
-i依赖i+1，j依赖j-1，所以i要倒序，j要正序
-f[i][j]=Math.max(arr[i]+s[i+1][j], arr[j]+s[i][j-1]);
-s[i][j]=Math.min(f[i+1][j], f[i][j-1]);
-
-```java
-    public int win2(int[] arr){
-        if(arr==null || arr.length==0){
-            return 0;
-        }
-        int len = arr.length;
-        int[][] f = new int[arr.length][arr.length];
-        int[][] s = new int[arr.length][arr.length];
-        for(int j=0;j<arr.length;j++){
-            f[j][j] = arr[j];
-            for(int i=j-1;i>=0;i--){
-                f[i][j]=Math.max(arr[i]+s[i+1][j], arr[j]+s[i][j-1]);
-                s[i][j]=Math.min(f[i+1][j], f[i][j-1]);
-            }
-        }
-        return Math.max(f[0][len-1], s[0][len-1]);
-    }
-```
-
-跳跃游戏：c-p235
-给定数组arr，arr[i]=k代表可以从位置i向右跳1-k个距离，比如arr[2]=3,代表位置2可以跳到位置3，位置4，位置5.如果从位置0出发，返回最少跳几次能到arr最后的位置上
-
-dp[i]为最少跳几次跳到索引i处
-dp[i] = min(dp[j]+1)  且dp[j]>=i-j
-这样的话复杂度是O(N^2)
-
-O(N)的做法如下：
-1.设dump，表示目前跳了多少步，
-cur代表如果只能跳jump步，最远能够达到的位置。
-next代表如果再多跳一步，最远到达的位置
-2.从左到右遍历arr，假设遍历到位置i
-    1.如果cur>=i，说明跳jump步可以到达位置i，此时什么都不用做
-    2.如果cur< i, 说明只跳jump步不能到达位置i，需要多跳一步才行。此时令jump++，cur=next，表示多跳了一步，cur更新为跳jump+1步能够达到的位置，即next
-    3.将next更新为math.max(next, i+arr[i])，表示下一次多跳一步能到达的最远位置
-3.最终返回jump即可
-
-
-```java
-public int jump(int[] arr){
-    if(arr==null || arr.length==0){
-        return 0;
-    }
-    int jump = 0;
-    int cur = 0;
-    int next = 0;
-    for(int i=0;i<arr.length;i++){
-        if(cur<i){
-            jump++;
-            cur = next;
-        }
-        next = Math.max(next, i+arr[i]);
-    }
-    return jump;
-}
-```
-
-数组中的连续最长序列：c-p236
-给定无序数组arr，返回其中最长的连续序列的长度
-如arr=[100,4,200,1,3,2],最长连续序列为[1,2,3,4]，返回4
-先把数组全部放到一个set中，表示全集，
-再创建一个set(visited)存放已经遍历过的数字。然后对数组进行遍历
-遍历到arr[i]时，如果arr[i]-1在visited中，则跳过，说明arr[i]所在的最长的子序列一定已经被检查过了。否则依次看arr[i], arr[i]+1，arr[i]+2...是否在set中，直到不在set中，每找到一个数，就把它加入到visited中，
-
-时间复杂度O(N), 空间复杂度O(N)
-```java
-public int longestSerialSequence(int[] arr){
-    if(arr==null || arr.length==0) return 0;
-    HashSet<Integer> set = new HashSet<>();
-    for(int i:arr){
-        set.add(i);
-    }
-    int res = 0;
-    for(int i:arr){
-        if(!set.contains(i-1)){ //如果i-1在，说明i要么在后面会被检查到，要么已经检查完了，取决于i-1在i的前还是后。总之cur就不用管了
-            int cnt = 0;
-            int tmp = i;
-            while(set.contains(tmp)){
-                cnt++;
-                tmp++;
-            }
-            res = Math.max(cnt, res);
-        }
-    }
-    return res;
-}
-```
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -26073,9 +25929,11 @@ public class Main{
 }
 ```
 
-字节2019笔试题2：3个同样的字母放在一起，去掉一个；AABB型的，去掉一个B
-只遍历2遍字符串，如果发现需要替代的字符，先换成‘#’，在遍历的时候去掉即可
-
+字节2019笔试题2：
+3个同样的字母放在一起，去掉一个；AABB型的，去掉一个B
+第一次遍历，发现连续有3个一样的字符，把第一个替换为#（发现#则继续往后看，#视为没有即可）
+第一次遍历，发现连续有AABB，把第一个B替换为# （发现#则继续往后看，#视为没有即可）
+再次遍历，遇到不为#的就把它加到答案字符串中
 ```java
 
     public String handleStr(String s){
@@ -26139,7 +25997,7 @@ public class Main{
     }
 ```
 
-1.田忌赛马问题
+1.田忌赛马问题：bb1
   两个小组A、B，每个小组有n个同学。已知每位同学的速度。两个小组进行赛跑获取积分，每次派出一名同学，胜者+1，败者-1，平局+0。问A组最多积多少分。输入n代表n名同学，在输入n个数代表A组每人速度，又n个数代表B组每人速度。
 
 
@@ -26214,7 +26072,7 @@ public class Main {
   n个人围着圆桌吃饭，要求每相邻两个人的身高差距不能超过m，有多少种安排方法。输入n和m,n=1,...,10,m=1,...,1000000。后面n行输入代表每个人的身高。
 
 
-1. 字节跳动大闯关
+1. 字节跳动大闯关：bb2
 题目描述：
 
 Bytedance Efficiency Engineering团队在8月20日搬入了学清嘉创大厦。为庆祝团队的乔迁之喜，字节君决定邀请整个EE团队，举办一个大型团建游戏-字节跳动大闯关。可是遇到了一个问题：
@@ -26299,7 +26157,7 @@ f[5] = 100000 + f[3] + 2* f[1] * f[3] +  但这个是可能有重复的。
 ```
 
 
-3.双生词：
+3.双生词：bb3
 双生词是满足两个条件的字符串：s和s'
 1.s与s'长度相同
 2.将s首尾相接绕成环，再选一个位置切开，顺时针或逆时针能得到s'
@@ -26374,7 +26232,7 @@ public class Main {
 
 
 
-头条笔试2：
+头条笔试2：bb4
 给一棵树对应的完全二叉树为参照，空白节点处用#字符表示，使用层序遍历表示二叉树，节点之间采用空格分割。
 如 
 4 2 7 # 3 6 9
@@ -26760,6 +26618,47 @@ b38：
         }else{
             return (char)((i-36)+'A');
         }
+    }
+```
+
+将整数字符串转成整数值：c-p248
+给定一个字符串str，如果str符合日常书写的整数形式，并且属于32位整数的范围，返回str所代表的整数值，否则返回0
+
+"123"->123, "023"->0  A13>0  0>0  2147483647>2147483647
+2147483648>0 因为溢出了，-123>-123
+
+首先看有没有负号，也不能有正号，正号不符合书写习惯
+然后从第一个元素开始，如果长度大于10，直接返回0，因为最大的就是10位
+如果第一个元素是0，返回0
+如果一遇到不是数字的，直接返回
+把遇到的字符都加到StringBuilder中，最后转成long，然后和int的上下限比较，比较通过则返回，
+否则返回0
+
+```java
+    public int getInt(String s){
+        if(s==null || s.length()==0) return 0;
+        boolean isNa = false;
+        char[] ss = s.toCharArray();
+        if(ss[0]=='-'){
+            isNa = true;
+        }
+        int i=isNa?1:0;
+        if(ss[i]=='0') return 0;
+
+        StringBuilder builder = new StringBuilder();
+        for(;i<ss.length;i++){
+            if(ss[i]<'0' || ss[i]>'9') return 0;
+            builder.append(ss[i]);
+        }
+        if(builder.length()>10) return 0;
+
+        long l = Long.valueOf(builder.toString());
+        l = isNa?-l:l;
+        if(l < Integer.MIN_VALUE) return 0;
+        else if(l > Integer.MAX_VALUE) return 0;
+
+        return (int)l;
+
     }
 ```
 
@@ -30802,6 +30701,402 @@ express=1，desired=false
     }
 ```
 
+
+排成一条线的纸牌博弈问题：c-p233
+给定一个整型数组arr，代表数值不同的纸牌排成一条线，玩家A和玩家B依次拿走每张纸牌，规定玩家A先拿，玩家B后拿，但是每个玩家每次只能拿走最左或最右的纸牌，玩家A和玩家B都很聪明，请返回最后胜利者的分数
+
+例如arr=[1,2,100,4]
+开始时玩家A只能拿走1或4，若A拿走1，则排列变为[2,100,4],接下来B可以拿走2或4，然后继续轮到A，如果开始时A先拿走4，则排列变为[1,2,100]，接下来B可以拿走1或100，然后继续轮到A，A作为聪明的人不会先拿4，因为拿走4后B会拿走100.所以玩家A会先拿1，让排列变成[2,100,4]，接下来玩家B不管怎么选，100都会被玩家A拿走。玩家A会获胜，分数为101.所以返回101。
+
+arr=[1,100,2],开始时玩家A不管先拿1还是2，B作为聪明人，都会把100拿走，B会获胜，分数为100，所以返回100
+
+递归的方法。定义递归函数f(i,j),表示如果arr[i..j]这个排列上的纸牌被聪明人先拿，最终能得到什么分数。定义递归函数s(i,j)，表示如果arr[i..j]这个排列上的纸牌被聪明人后拿，最终能获得什么分数。
+
+首先分析f(i..j)，具体过程如下：
+1.如果i==j，即arr[i..j]上只剩一张纸牌，当然会被先拿纸牌的人拿走，所以返回arr[i]
+2.如果i!=j, 当前拿牌的人有两种选择，要么拿走arr[i],要么拿走arr[j]。如果拿走arr[i],那么排列将剩下arr[i+1,j]。对当前的玩家来说，面对arr[i+1..j]排列的纸牌，他成了后拿的人，所以后续他能获得的分数为s(i+1,j)，如果先拿走arr[j]，那么排列剩下arr[i..j-1]。面对arr[i..j-1]，他成了后拿的人，为了后续他能获得的分数为s(i,j-1)，作为聪明人，必然会在两种决策中选最优的，所以返回max{arr[i]+s(i+1,j), arr[j]+s(i,j-1)}。
+
+然后分析s(i,j)，具体过程如下：
+1.如果j==i，即arr[i..j]只剩一张纸牌，后拿纸牌的人必然什么也得不到。返回0
+2.如果i!=j。根据函数s的定义，玩家的对手会先拿牌，对手要么拿走arr[i]，要么拿走arr[j]。如果对手拿走arr[i]，那么排列将剩下arr[i+1..j]，然后轮到玩家先拿。如果对手拿走arr[j]，那么排列将剩下arr[i..j-1],然后轮到玩家先拿。对手也是聪明的人，所以必然会把最差的情况留给玩家。所以返回min{f(i+1,j), f(i,j-1)}
+
+```java
+    public int win1(int[] arr){
+        if(arr==null || arr.length==0){
+            return 0;
+        }
+        return Math.max(f(arr, 0, arr.length-1), s(arr, 0, arr.length-1));
+    }
+
+    public int f(int[] arr, int i, int j){
+        if(i==j){
+            return arr[i];
+        }
+        return Math.max(arr[i]+s(arr, i+1, j), arr[j]+s(arr, i, j-1));
+    }
+
+    public int s(int[] arr, int i, int j){
+        if(i==j){
+            return 0;
+        }
+        return Math.min(f(arr, i+1, j), f(arr, i, j-1));
+    }
+
+```
+
+根据递归的方法，很明显可以使用动态规划来改进：
+i依赖i+1，j依赖j-1，所以i要倒序，j要正序
+f[i][j]=Math.max(arr[i]+s[i+1][j], arr[j]+s[i][j-1]);
+s[i][j]=Math.min(f[i+1][j], f[i][j-1]);
+
+```java
+    public int win2(int[] arr){
+        if(arr==null || arr.length==0){
+            return 0;
+        }
+        int len = arr.length;
+        int[][] f = new int[arr.length][arr.length];
+        int[][] s = new int[arr.length][arr.length];
+        for(int j=0;j<arr.length;j++){
+            f[j][j] = arr[j];
+            for(int i=j-1;i>=0;i--){
+                f[i][j]=Math.max(arr[i]+s[i+1][j], arr[j]+s[i][j-1]);
+                s[i][j]=Math.min(f[i+1][j], f[i][j-1]);
+            }
+        }
+        return Math.max(f[0][len-1], s[0][len-1]);
+    }
+```
+
+跳跃游戏：c-p235
+给定数组arr，arr[i]=k代表可以从位置i向右跳1-k个距离，比如arr[2]=3,代表位置2可以跳到位置3，位置4，位置5.如果从位置0出发，返回最少跳几次能到arr最后的位置上
+
+dp[i]为最少跳几次跳到索引i处
+dp[i] = min(dp[j]+1)  且dp[j]>=i-j
+这样的话复杂度是O(N^2)
+
+O(N)的做法如下：
+1.设dump，表示目前跳了多少步，
+cur代表如果只能跳jump步，最远能够达到的位置。
+next代表如果再多跳一步，最远到达的位置
+2.从左到右遍历arr，假设遍历到位置i
+    1.如果cur>=i，说明跳jump步可以到达位置i，此时什么都不用做
+    2.如果cur< i, 说明只跳jump步不能到达位置i，需要多跳一步才行。此时令jump++，cur=next，表示多跳了一步，cur更新为跳jump+1步能够达到的位置，即next
+    3.将next更新为math.max(next, i+arr[i])，表示下一次多跳一步能到达的最远位置
+3.最终返回jump即可
+
+
+```java
+public int jump(int[] arr){
+    if(arr==null || arr.length==0){
+        return 0;
+    }
+    int jump = 0;
+    int cur = 0;
+    int next = 0;
+    for(int i=0;i<arr.length;i++){
+        if(cur<i){
+            jump++;
+            cur = next;
+        }
+        next = Math.max(next, i+arr[i]);
+    }
+    return jump;
+}
+```
+
+数组中的连续最长序列：c-p236
+给定无序数组arr，返回其中最长的连续序列的长度
+如arr=[100,4,200,1,3,2],最长连续序列为[1,2,3,4]，返回4
+先把数组全部放到一个set中，表示全集，
+再创建一个set(visited)存放已经遍历过的数字。然后对数组进行遍历
+遍历到arr[i]时，如果arr[i]-1在visited中，则跳过，说明arr[i]所在的最长的子序列一定已经被检查过了。否则依次看arr[i], arr[i]+1，arr[i]+2...是否在set中，直到不在set中，每找到一个数，就把它加入到visited中，
+
+时间复杂度O(N), 空间复杂度O(N)
+```java
+public int longestSerialSequence(int[] arr){
+    if(arr==null || arr.length==0) return 0;
+    HashSet<Integer> set = new HashSet<>();
+    for(int i:arr){
+        set.add(i);
+    }
+    int res = 0;
+    for(int i:arr){
+        if(!set.contains(i-1)){ //如果i-1在，说明i要么在后面会被检查到，要么已经检查完了，取决于i-1在i的前还是后。总之cur就不用管了
+            int cnt = 0;
+            int tmp = i;
+            while(set.contains(tmp)){
+                cnt++;
+                tmp++;
+            }
+            res = Math.max(cnt, res);
+        }
+    }
+    return res;
+}
+```
+
+N皇后问题：c-p238
+
+N皇后问题是在NxN的棋盘上摆N个皇后，要求任何两个皇后不同行，不同列，也不在同一斜线，给定一个整数n，返回n皇后的摆法有多少种
+例：n=1，返回1；n=2或3，怎么摆都不行，返回0；n=8，返回92
+
+》基本方法：
+递归+遍历的做法（本质是trackback），递归每一行，如果该行该位置能放置，则进入下一行
+这样做法在n大时会非常非常慢，（在n=14时为10s）
+
+
+```java
+    public int nQueue(int n){
+        if(n<=0) return 0;
+        int[] res = new int[1];
+        int[][] board = new int[n][n];
+        trackBack(board, n, 0, res);
+        return res[0];
+    }
+
+
+    public void trackBack(int[][] board, int n, int curRow, int[] res){
+        if(curRow==n) {
+            res[0]++;
+            return;
+
+        }
+        for(int j=0;j<n;j++){
+            if(posValid(n, curRow, j, board)){
+                board[curRow][j]=1;
+                trackBack(board, n, curRow+1, res);
+                board[curRow][j]=0;
+            }
+        }
+    }
+
+    public boolean posValid(int n, int row, int col, int[][] board){
+        int tmpx = row;
+        int tmpy = col;
+        //检查同一行是否有其他皇后
+        for(int j=0;j<n;j++){
+            if(board[row][j]==1) return false;
+        }
+        //检查同一列是否有其他皇后
+        for(int i=0;i<n;i++){
+            if(board[i][col]==1) return false;
+        }
+        //检查所在的斜线上是否有其他皇后
+        tmpx = row;
+        tmpy = col;
+        while(tmpx>=0 && tmpy>=0){
+            if(board[tmpx][tmpy]==1) return false;
+            tmpx--;
+            tmpy--;
+        }
+        tmpx = row;
+        tmpy = col;
+        while(tmpx<n && tmpy>=0){
+            if(board[tmpx][tmpy]==1) return false;
+            tmpx++;
+            tmpy--;
+        }
+        tmpx = row;
+        tmpy = col;
+        while(tmpx>=0 && tmpy<n){
+            if(board[tmpx][tmpy]==1) return false;
+            tmpx--;
+            tmpy++;
+        }
+        tmpx = row;
+        tmpy = col;
+        while(tmpx<n && tmpy<n){
+            if(board[tmpx][tmpy]==1) return false;
+            tmpx++;
+            tmpy++;
+        }
+        return true;
+
+    }
+
+
+```
+
+》更好的方法：（好像比较超自然）
+变量upperLim表示当前行的那些位置是可以放皇后的，1代表可以放置，0代表不能放置。
+8皇后问题中，初始时upperLim=00000000000000000000000011111111，32皇后问题中，初始时upperLim=11111111111111111111111111111111
+colLim表示递归计算到上一行为止，哪些列已经放置了皇后，1代表已经放置，0代表没有放置。
+leftDiaLim表示递归到上一行为止，因为受已经放置的所有皇后的左下方斜线的影响，导致当前行不能放置皇后，1代表不能放置，0代表可以放置。举个例子，如果在第0行第4列放置了皇后。计算到第1行时，第0行皇后的左下斜方影响的是第1行第3列，当计算到第二行是，第0行皇后的左下斜影响的是第二行第2列，leftDiaLim每次左移一位，就可以得到之前所有皇后的左下方斜线对当前行的影响。
+rightDiaLim表示递归到上一行为止，因为受已经放置的所有皇后的右下方斜线的影响，导致当前行不能放置皇后，1代表不能放置，0代表可以放置。rightDiaLim每次右移一位，就可以得到之前所有皇后的右下方斜线对当前行的影响。
+
+变量mostRightOne代表在pos中，最右边的1是什么位置，然后从右到左一次筛选出pos中可选择的位置进行递归尝试
+
+```java
+public int num2(int n){
+    //本方法的位运算的载体是int变量，所以只能计算1-32皇后问题
+    //项计算更多皇后问题，需使用含更多位的变量
+    if(n<1 || n>32){
+        return 0;
+    }
+    int upperLim = n ==32?-1:(1<<n)-1; //((1<<n)-1)从第0位到第n-1位都是1，其他位是0
+    return process2(upperLim, 0,0,0);
+}
+
+public int process2(int upperLim, int colLim, int leftDiaLim, int rightDiaLim){
+    if(colLim==upperLim){
+        return 1;
+    }
+    int pos=0;
+    int mostRightOne = 0;
+    //(colLim | leftDiaLim | rightDiaLim)会把所有不能再放皇后的位标为1
+    //取反后就是所有能放皇后的地方标为1，再与upplerLim做与，就是最终能放皇后的位置都是1的数
+    int res = 0;
+    pos = upperLim & (~(colLim | leftDiaLim | rightDiaLim));
+    while(pos!=0){
+        mostRightOne = pos & (~pos+1); //得到pos中最右边1保留其他位都变0的数
+        pos = pos -mostRightOne; //相当于把最右边的1变为0，代表这个位置已经被放了皇后，接下来这一列就不能再放了
+        res += process2(upperLim, colLim | mostRightOne,
+            (leftDiaLim | mostRightOne)<<1,  //左下方不能再放了
+            (rightDiaLim | mostRightOne)>>>1  //右下方不能再放了
+            );
+
+    }
+    return res;
+}
+```
+
+第五章：字符串问题
+
+判断两个字符串是否互为变形词：c-p242
+给定两个字符串str1和str2，如果str1和str2中出现的字符种类一样且每种字符出现的次数也一样，那么str1和str2互为变形词，请实现函数判断两个字符串是否互为变形词
+
+》方法一：用map
+用hashmap，key为字符，value为出现次数，遍历str1，把所有字符及次数都放入map中，然后遍历str2，每出现一个字符，若其在map中没有，直接返回false，若有，次数-1，当次数为0时从map中删除这个key，最后看map的size是否为0,
+
+》方法二：用数组
+用两个数组分别记录两个单词中每个字母的个数，然后比较两个数组对应位置的值是否相同
+
+```java
+public boolean isChanged(String s1, String s2){
+    if(s1==null && s2==null){
+        return true;
+    }else if(s1==null || s2==null){
+        return false;
+    }
+    if(s1.length()!=s2.length()) return false;
+    HashMap<Character, Integer> map = new HashMap<>();
+    for(int i=0;i<s1.length();i++){
+        char c = s1.charAt(i);
+        map.put(c, map.getOrDefault(c, 0)+1);
+    }
+
+    for(int i=0;i<s2.length();i++){
+        char c = s2.charAt(i);
+        if(!map.containsKey(c)) return false;
+        else{
+            map.put(c, map.get(c)-1);
+            if(map.get(c)==0){
+                map.remove(c);
+            }
+        }
+    }
+    return map.size()==0;
+}
+```
+
+字符串中数字子串求和：c-p243
+
+给定一个字符串str，求其中全部数字所代表的数字之和
+1.忽略小数点符，如"A1.3" 其中包含两个数字1和3
+2.如果紧贴数字子串的左侧出现字符"-",连续出现的数量为奇数时，数字视为负，连续出现的数量为偶数时，数字视为正，例如，"A-1BC--12"，其中包含数字为-1和12
+例如：str="A1CD2E33" 返回36
+str="A-1B--2C--D6E"
+
+首先遍历的时候如果遇到数字，则持续走到没数字位置，把连着出现的数字作为一个数，然后往前找它的符号，直到不是"-", 如果-是奇数则取反，否则不变，把这个数加到结果上
+
+```java
+
+    public int getStrSum(String s){
+        if(s==null || s.length()==0) return 0;
+        int res = 0;
+        char[] ca = s.toCharArray();
+        for(int i=0;i<ca.length;i++){
+            char c = ca[i];
+            if(c<'0' || c>'9') continue;
+            else{
+                int start = i;
+                int tmp =0;
+                while(i<ca.length && ca[i]>='0' && ca[i]<='9'){
+                    tmp = tmp *10 + ca[i]-'0';
+                    i++;
+                }
+                //如果i直接进入下一轮循环，又会加一，相当于多加了，这里减去1个
+                i--;
+
+                boolean isNa = false;
+                for(int j=start-1; j>=0 && ca[j]=='-'; j--){
+                    isNa = !isNa;
+                }
+                tmp = isNa?-tmp:tmp;
+                res += tmp;
+            }
+        }
+        return res;
+    }
+```
+
+去掉字符串中连续出现的k个0的子串：c-p245
+
+给定一个字符串str和一个整数k，如果str中正好有连续的k个'0'字符出现时，把k个连续的'0'字符去掉，返回处理后的字符串
+
+str='A00B' k=2 返回 AB
+str='A0000B000' k=3 返回"A0000B"
+
+遍历，设一个记录累计0的个数cnt，当是0时+1，不是0时检查这个cnt是否为k，若为k则把答案串的后k个字符删除掉。 做完上述操作后，cnt重置为0。
+把字符加入答案集中。这样做可能会漏掉最后的部分，遍历完后再看一次cnt是否为k，是则删除答案串的后k个字符
+
+时间复杂度O(n), 空间复杂度O(1) （为了方便用了toCharArray，其实可以不用）
+
+```java
+    public String removeSerialK(String s, int k){
+        if(s==null || s.length()==0) return s;
+        char[] array = s.toCharArray();
+        int cnt = 0;
+        StringBuilder builder = new StringBuilder();
+        for(int i=0;i<array.length;i++){
+            if(array[i]=='0'){
+                cnt++;
+            }else{
+                if(cnt==k){
+                    builder.delete(builder.length()-k, builder.length());
+                }
+                cnt = 0;
+            }
+            builder.append(array[i]);
+        }
+        if(cnt==k){
+            builder.delete(builder.length()-k, builder.length());
+        }
+        return builder.toString();
+    }
+
+```
+
+判断两个字符是否互为旋转词：c-p247
+判断一个字符串str，把字符串str前面任意部分挪到后面形成的字符串叫做str的旋转词，如str="12345",str的旋转词有"12345", "23451", "34512", "45123" 和"51234"。给定两个字符串a和b，请判断a和b是否互为旋转词
+
+把a放入一个builder中，然后每次把开头的字符放到后面，每次放1个，共放len-2次，每次看builder.substring(i+1)与b是否相等,这里不要delete，因为删除会引起builder底层的数组进行重新组织，很费时间。
+
+```java
+    public boolean isRotatingWord(String a, String b){
+        if(a==null || b==null ||a.length()==0 || b.length()==0){
+            return false;
+        }
+        int len = a.length();
+        StringBuilder builder = new StringBuilder(a);
+        for(int i=0;i<len-1;i++){
+            builder.append(builder.charAt(i));
+            if(builder.substring(i+1).equals(b)) return true;
+        }
+        return false;
+    }
+```
 
 
 
