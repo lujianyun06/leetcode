@@ -8838,12 +8838,313 @@ b38：
     }
 ```
 
+在有序但含空的数组中查找字符串：c-p258
+给定一个字符串数组strs[], 在strs中有些位置为null，但在不为null的位置上，其字符串是按照字典顺序由小到大依次出现的。再给定一个字符串str，请返回str在strs中出现的最左的位置。
+
+strs=[null, "a", null, "a", null,"b", null, "c"], str="a",返回1
+strs=[null, "a", null, "a", null,"b", null, "c"], str=null, 只要str为null，就返回-1
+strs=[null, "a", null, "a", null,"b", null, "c"], str="d",返回-1
+
+由于字符串按照字典顺序，所以可以用二分查找，但关键在于如果mid是null时怎么办
+1.首先二分查找，mid=(left+right)/2
+2.如果strs[mid]与str一样，说明找到了str，令res=mid，但要找最左的位置，还要在左半区查找，令right=mid-1，然后重复步骤1
+3.如果str[mid]与str不一样，且strs[mid]!=null，此时比较str[mid]与str，如果前者更小，说明左半区不会出现str，需在右半区找，后者更小，则在左半区找
+4.如果字符串strs[mid]与str不一样，且strs[mid]==null，则从mid开始，从右到左遍历左半区，即str[left...mid], 如果整个左半区都是null，那么继续用二分的方式在右半区查找，即令left=mid+1；如果不都是null，假设从右到左遍历strs[left...mid]时第一个不为null的位置是i，那么把str和strs[i]比较，
+如果strs[i]字典序小于str，说明左半区没有str，令left=mid+1，重复步骤1
+如果strs[i]字典序等于str，让res等于i，但要找最左边的，让right=mid-1，重复1
+如果strs[i]字典序大于str，让right=i-1，重复1
 
 
 
+```java
+    public int getFirstPos(String[] strs, String str){
+        if(str==null || strs.length==0 || str==null) return -1;
+        int res=-1;
+        int left=0;
+        int right=strs.length-1;
+        int mid=0;
+        int i=0;
+        while(left<=right){
+            mid = (left+right)>>1;
+            if(strs[mid]!=null && strs[mid].equals(str)){
+                res = mid;
+                right=mid-1;
+            }else if(strs[mid]!=null){
+                if(strs[mid].compareTo(str)<0){
+                    left = mid+1;
+                }else{
+                    right = mid-1;
+                }
+            }else{
+                i = mid;
+                while(strs[i]==null && --i>=left)
+                    ;
+                if(i<left || strs[i].compareTo(str)<0){
+                    left=mid+1;
+                }else{
+                    res = strs[i].equals(str)?i:res;
+                    right=i-1;
+                }
+            }
+        }
+
+    }
+```
+
+字符串的调整与替换：c-p260.1
+给定一个字符类型的数组chas[], chas右半区全是空字符，左半区不含有空字符。现在想将左半区中所有的空格字符替换为%20，假设chas右半区足够大，可以满足替换所需要的空间，完成替换函数
+举例：如果把chas的左半区看作字符串，为"a b  c",假设chas的右半区足够大，替换后，chas左半区为"a%20b%20%20c"
+替换函数的时间复杂度是O(n), 额外的空间复杂度是O(1).
+
+先遍历一遍数组，看左半区有多大，记为len，其中的空格个数为num，那么总的需要的长度为len+2* num
+则一个指针p1指向整个数组的最后，一个指针p2指向左半区的最后，p2如果不是空格，则把p2的字符放到p1处，p2--，p1--。如果p2是空格，则依次把%，2，0放到p1中，这样就可以得到替换后的数组
+
+```java
+    public void replace(char[] chas){
+        int len=0;
+        int num = 0;
+        for(int i=0;chas[i]!='\0';i++){
+            if(chas[i]==' ')
+                num++;
+            len++;
+        }
+
+        int totalLen = len + 2*num;
+        int p1 = totalLen-1;
+        int p2 = len-1;
+        while(p1>=0 && p2>=0){
+            if(chas[p2]!=' '){
+                chas[p1--]=chas[p2--];
+            }else{
+                chas[p1--]='0';
+                chas[p1--]='2';
+                chas[p1--]='%';
+                p2--;
+            }
+        }
+    }
+```
+
+字符串的调整与替换2：c-p260.2
+给定一个字符类型数组chas[],只含数字字符和'* '字符，现在想把所有的* 挪到chas左边，数字字符挪到右边，完成调整函数，要求空间复杂度为O(1)
+先遍历一遍数组，找出其中数字的个数，让一个指针p1在数组尾部，一个指针p2在最后一个数字字符处，
+如果p2是数字字符，则让chas[p1--]=chas[p2--].，否则只让p2--，这样就能把所有数字字符按原顺序复制到数组尾部，然后再在数组前面替换掉原星号个数个星号即可
+
+```java
+public void replace(char[] chas){
+    if(chas==null || chas.length==0) return;
+    int numberCnt = 0;
+    int len = chas.length;
+    int p1=len-1;
+    int p2=0;
+    for(int i=0;i<len;i++){
+        if(chas[i]>='0' && chas[i]<='9'){
+            numberCnt++;
+            p2=i;
+        }
+    }
+
+    while(p2>=0){
+        if(chas[p2]>='0' && chas[p2]<='9'){
+            chas[p1--]=chas[p2--];
+        }else
+            p2--;
+    }
+    int starCnt = len-numberCnt;
+    for(int i=0;i<starCnt;i++){
+        chas[i]='*';
+    }
+}
+```
+
+## 上述两题都是利用倒着复制的技巧，很多字符串问题和这个技巧有关，要重视
+
+翻转字符串，:c-p262.1
+给定一个字符类型的数组chas，在单词间做逆序调整，只做到单词逆序即可，对空格的位置没有特别要求。
+如果把chas看作字符串为"dog loves pig" 调整为 "pig loves dog"
+如果把chas看作字符串为"I'm a Student" 调整为 "Student a I'm"
+
+如果能O(n)空间的话非常简单，把每个单词存到list中，倒着输出到数组中。
+如果用O(1)空间：
+先把字符串整体倒序，然后再每个单词做倒序，就可以得到答案
+
+```java
+    public void reverse(char[] strs){
+        if(strs==null || strs.length==0) return;
+        reverse(strs, 0, strs.length-1);
+        int len=strs.length;
+        int pre = -1;
+
+        for(int i=pre+1;i<len;i++){
+            if(strs[i]==' '){
+                reverse(strs, pre+1, i-1);
+                pre = i;
+            }
+        }
+        //如果最后不是空格，则要对最后一个词做额外处理
+        if(strs[len-1]!=' '){
+            reverse(strs, pre+1, len-1);
+        }
+    }
+
+    public void reverse(char[] strs, int start, int end){
+        if(start>=end) return;
+        int mid = (start+end)>>1;
+        int sum = start+end;
+        for(int i=start; i<=mid;i++){
+            char tmp = strs[i];
+            strs[i]=strs[sum-i];
+            strs[sum-i]=tmp;
+        }
+    }
+```
+
+循环左移字符串：c-p262.2
+给定一个字符类型的数组chas和整数size，请把大小为size的左半区整体移到右半区，右半区整体移到左半区
+如chas看作字符串"ABCDE", size=3,则调整为"DEABC"
+
+这里其实是循环左移size位
+
+不论对于循环左移还是右移，首先让k=k%len;
+循环左移k位：先把原串分成[0...k-1]  [k...len-1]两部分
+    两部分先各自翻转：[k-1...0] [len-1...k]
+    然后字符串整体翻转： [k...len-1] [0...k-1]
+
+循环右移k位相当于循环左移 len-k 位
 
 
+```JAVA
+public void move(char[] chas, int size){
+    if(chas==null || chas.length==0) return;
+    int len = chas.length;
+    size = size%len;
+    int k = size;
+    reverse(chas, 0, k-1);
+    reverse(chas,k, len-1);
+    reverse(chas, 0, len-1);
 
+}
+
+public void reverse(char[] chas, int start, int end){
+    if(start>=end) return;
+    int mid = (start+end)>>1;
+    int sum = start+end;
+    for(int i=start;i<=mid;i++){
+        char tmp = chas[i];
+        chas[i] = chas[sum-i];
+        chas[sum-i]=tmp; 
+    }
+}
+```
+
+数组中两个字符串的最小距离：c-p266.1
+给定一个字符串数组strs，再给定两个字符串str1和str2，返回strs中str1与str2的最小距离，如果str1或str2为null，或不在strs中，返回-1；
+strs=["1","3","3","3","2","3","1"] str1="1", str2="2",返回2.
+strs=["CD"], str1="CD", str2="AB", 返回-1.
+
+遍历数组，记录str1和str2最近出现的位置pos1和pos2，当遍历到str1时，看i与pos2的差的绝对值是多少，更新pos1=i；遍历到str2时，看i与pos1的差的绝对值是多少，，更新pos2=i，最后只保留最小的答案即可
+
+```java
+    public int getMinDis(String[] strs, String str1, String str2){
+        if(strs==null || strs.length==0 || str1==null || str2==null) return -1;
+        int res = Integer.MAX_VALUE;
+        int pos1=-1;
+        int pos2=-1;
+        for(int i=0;i<strs.length;i++){
+            if(str1.equals(strs[i])){
+                pos1= i;
+                if(pos2!=-1){
+                    int tmp = (int)Math.abs(pos1-pos2);
+                    res = tmp<res?tmp:res;
+                }
+
+            }else if(str2.equals(strs[i])){
+                pos2= i;
+                if(pos1!=-1){
+                    int tmp = (int)Math.abs(pos1-pos2);
+                    res = tmp<res?tmp:res;
+                }
+
+            }
+        }
+        return res==Integer.MAX_VALUE?-1:res;
+    }
+```
+
+c-p266.2
+如果查询的次数有很多，如何把每次查询的时间复杂度降为O(1)?
+首先可以把所有的字符串去重后放进一个list，然后构建一个矩阵dis[size][size]
+dis[i][j]就是list中第i个元素与第j个元素之间的距离，而且为了O(1)的查找效率，把list中每个字符串的索引作为value，字符串作为key放到一个map中。
+对于strs中每一个位置的string，用一个list保存每一个字符串的最新的位置，在每遍历到一个位置后，去检查其与其他字符的最小距离变了没，变了的就更新。
+最终统一dis[i][j] 让dis[i][j]等于dis[i][j]与dis[j][i]中的小值，就完成了距离矩阵
+查询时只需要找到str1和str2对应的索引i和j，然后返回dis[i][j]即可，
+
+建立时的复杂度 tO(n^2), sO(n^2)
+查找时的时间复杂度tO(1)
+
+
+```java
+    HashSet<String> set = new HashSet<>();
+    ArrayList<String> list = new ArrayList<>();
+    HashMap<String, Integer> posMap = new HashMap<>();
+    int[][] dis;
+    public void init(String[] strs){
+        if(strs==null || strs.length==0) return;
+         set = new HashSet<>();
+        list = new ArrayList<>();
+        posMap = new HashMap<>();
+        for(String s:strs){
+            if(!set.contains(s)){
+                list.add(s);
+                set.add(s);
+                posMap.put(s, list.size()-1);
+            }
+        }
+
+        int len = list.size();
+        dis = new int[len][len];
+        for(int i=0;i<len;i++){
+            for(int j=0;j<len;j++){
+                dis[i][j]=Integer.MAX_VALUE;
+            }
+        }
+
+        //posList[i]保存list[i]最新的位置
+        ArrayList<Integer> posList = new ArrayList<>();
+        for(int i=0;i<len;i++){
+            posList.add(-1);
+        }
+
+        for(int i=0;i<strs.length;i++){
+            int index = posMap.get(strs[i]);
+            posList.set(index, i);
+            //每更新一个字符串的位置，就看它和别的字符串的最小位置变了没
+            for(int j=0;j<len;j++){
+                int jIndex = posMap.get(list.get(j));
+                if(posList.get(jIndex)!=-1){
+                    int tmp = Math.abs(i-posList.get(jIndex));
+                    dis[index][jIndex] = dis[index][jIndex]>tmp?tmp:dis[index][jIndex];
+                }
+            }
+        }
+
+        //把dp[i][j]和dp[j][i]统一为其中的更小值
+        for(int i=0;i<len;i++){
+            for(int j=0;j<len;j++){
+                dis[i][j]=dis[i][j]>dis[j][i]?dis[j][i]:dis[i][j];
+            }
+        }
+    }
+
+    public int getMinDis(String s1, String s2){
+        if(s1==null || s2==null) return -1;
+        else if(!set.contains(s1) || !set.contains(s2)) return -1;
+        int i = posMap.get(s1);
+        int j = posMap.get(s2);
+        return dis[i][j];
+
+    }
+```
 
 
 
