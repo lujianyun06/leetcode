@@ -13770,6 +13770,212 @@ i从1开始，i=i+2;
 
 ```
 
+添加最少字符使字符串整体都是回文字符串：c-p269.1
+给定一个字符串str，如果可以在str的任意位置添加字符，返回在添加字符最少的情况下，让str整体都是回文字符串的一种结果
+
+str=ABA，str本身就是回文，不需要添加字符，所以返回ABA
+str=AB，则可以返回BAB，也可以返回ABA
+
+不要与214题混淆，214是简单情况，只在str的前面添加，这道题是任何位置都可以添加
+先看str是不是回文，若是则直接返回
+
+
+使用动态规划：dp[i][j]代表子串str[i...j]最少添加几个字符可以使str[i..j]整体都是回文串
+1.如果str[i..j]只有一个字符，那么dp[i][j]=0，因为它已经是回文串
+2.如果str[i..j]只有两个字符，那么dp[i][j]=0，如果不等，那么只用添加一个字符即可，即dp[i][j]=1
+3.如果str[i..j]多于两个字符，
+    若str[i]==str[j]，那么dp[i][j]=dp[i+1][j-1]
+    若str[i]!=str[j],要让str[i..j]变成回文串有两种方法：
+        >1.让str[i..j-1]先变成回文串，然后再左边加上字符str[j]
+        >2.让str[i+1..j]先变成回文串，然后在右边加上字符str[i]
+    取两种办法中的更小情况，即dp[i][j]= 1+ min{dp[i+1][j], dp[i][j-1]}
+
+然后根据dp矩阵，求在添加字符最少的情况下，让str整体都是回文字符串的一种结果：
+dp[0][n-1]的值代表整个字符串最少添加几个字符，如果最后的结果记为字符串res，res的长度=dp[0][n-1]+str长度，然后依次设置res左右两头的长度。此时res左右两头的字符为str[i]，然后继续根据str[i+1..j]和矩阵dp来设置res的中间部分
+1.如果str[i..j]中 str[i]==str[j]，那么str[i..j]变成回文串的最终结果=str[i]+str[i+1,j-1]变成回文串的结果+str[j]
+2.如果str[i..j]中str[i]!=str[j]看dp[i][j-1]和dp[i+1][j]哪个小，如果dp[i][j-1]更小，那么str[i..j]变成回文串的结果=str[j]+dp[i][j-1]变成回文串的结果+str[j]，然后继续根据str[i..j-1]和矩阵dp来设置res的中间部分
+否则str[i..j]变成回文串的结果=str[i]+dp[i+1][j]变成回文串的结果+str[i]，然后继续根据str[i+1..j]和矩阵dp来设置res的中间部分
+
+```java
+
+    public String getPlalindrome(String s){
+        if(s==null || s.length()==0 || isPlalindrome(s)) return s;
+        int n = s.length();
+        int[][] dp=new int[n][n];
+        getDp(dp, s);
+
+        char[] chas = s.toCharArray();
+        char[] res = new char[n+dp[0][n-1]];
+        int i=0;
+        int j=n-1;
+        int resl=0;
+        int resr=res.length-1;
+        while(i<=j){
+            if(chas[i]==chas[j]){
+                res[resl++]=chas[i++];
+                res[resr--]=chas[j--];
+            }else if(dp[i][j-1]<dp[i+1][j]){
+                res[resl++]=chas[j];
+                res[resr--]=chas[j--];
+            }else{
+                res[resl++]=chas[i];
+                res[resr--]=chas[i++];
+            }
+        }
+        return String.valueOf(res);
+
+    }
+
+    public void getDp(int[][]dp, String s){
+        int n = s.length();
+        for(int i=0;i<n;i++){
+            dp[i][i]=0;
+        }
+        char[] ss = s.toCharArray();
+        for(int i=n-1;i>=0;i--){
+            for(int j=i+1;j<n;j++){
+                if(j==i+1){
+                    if(ss[i]==ss[j]) dp[i][j]=0;
+                    else dp[i][j]=1;
+                }else{
+                    if(ss[i]==ss[j])
+                        dp[i][j]=dp[i+1][j-1];
+                    else{
+                        dp[i][j]=1+Math.min(dp[i+1][j], dp[i][j-1]);
+                    }
+                }
+            }
+        }
+    }
+
+
+
+    public boolean isPlalindrome(String s){
+        if(s==null || s.length()==0) return false;
+        return new StringBuilder(s).reverse().equals(s);
+    }
+
+
+```
+
+》进阶回文字符串：c-p269.2
+给定一个字符串str，再给定一个最长回文子序列字符串strlps，请返回在添加字符最少的情况下，让str整体都是回文字符串的一种结果，进阶问题比原问题多了一个参数，请做到时间复杂度比原问题的实现低
+
+举例：str=A1B21C strlps=121  返回AC1B2B1CA 或者 CA1B2B1AC 总之，只要是添加的字符数最少，只返回一种结果即可。
+
+求解的时间复杂度可以加速到O(n),如果str的长度为n，strlps的长度为m，则整体回文的长度应该是2n-m. 提供的解法类似于”剥洋葱“的过程：
+以str=A1BC22DE1F，strlps=1221 举例
+洋葱第0层由strlps[0]和strlps[m-1]组成，即1...1 从str最左侧开始找字符'1'，发现A是第0个字符，'1'是str第1个字符，所以左侧第0层洋葱圈外的部分为"A", 记为leftPart。从str最右侧开始找字符'1'，发现右侧第0层洋葱圈外的部分是rightPart。把（leftPart+rightPart逆序）复制到res左侧未设值的部分，把（rightPart+leftPart逆序）复制到res右侧未设值的部分，即res变为”AF...FA“把洋葱的第0层复制进res的左右两侧未设值的部分，即res=AF1..1FA，至此，洋葱第0层被剥掉。洋葱的第1层由strlps[1]和strlps[m-2]组成，然后继续。。。
+整个过程就是不断找洋葱圈的左部分和有部分，把（leftPart+rightPart逆序）复制到res左侧未设值的部分，把（rightPart+leftPart逆序）复制到res右侧未设值的部分，洋葱剥完则过程结束
+
+```java
+public String getPlalindrome2(String str, String strlps){
+    if(str==null || str.equals("")) return "";
+
+    char[] chas = str.toCharArray();
+    char[] lps = strlps.toCharArray();
+    char[] res = new char[2*chas.length-lps.length];
+    int chasl = 0;
+    int chasr = chas.length-1;
+    int lpsl=0;
+    int lpsr = lps.length-1;
+    int resl; = 0;
+    int resr = res.length-1;
+    int tmpl =0;
+    int tmpr = 0;
+    while(lpsl<=lpsr){
+        tmpl = chasl;
+        tmpr = chasr;
+        while(chas[chasl]!=lps[lpsl]){
+            chasl++;
+        }
+        while(chas[chasr]!=lps[lpsr]){
+            chasr--;
+        }
+        set(res, resl, resr, chas, tmpl, chasl, chasr, tmpr);
+        res[resl++] = chas[chasl++];
+        res[resr--] = chas[chasr--];
+        lpsl++;
+        lpsr--;
+    }
+    return String.valueOf(res);
+
+}
+
+//ls = tmpl; le=chasl rs=chasr re=tmpr
+public void set(char[] res, int resl, int resr, char[] chas, int tmpl, int chasl, int chasr, int tmpr){
+    for(int i=tmpl;i<chasl;i++){
+        res[resl++]=chas[i];
+        res[resr--]=chas[i];
+    }
+    for(int i=tmpr;i>chasr;i--){
+        res[resl++] = chas[i];
+        res[resr--] = chas[i];
+    }
+}
+```
+
+括号字符串的有效性和最长有效长度：c-p273.1
+
+给定一个字符串str，判断是不是整体有效的括号字符串
+() true    (()()) true   (()) true
+())  false   ()(  false   ()a() false
+
+左括号cnt+1，右括号cnt-1， 过程中不能出现负数，且遍历过程中不能有非括号字符，最后cnt必须的是0，才是true，否则是false
+
+```java
+public boolean isValid(String str){
+    if(str==null || str.length()==0) return false;
+    int cnt = 0;
+    char[] s = str.toCharArray();
+    for(int i=0;i<s.length;i++){
+        if(s[i]!='(' && s[i]!=')') return false;
+        if(s[i]=='('){
+            cnt++;
+        }else{
+            cnt--;
+        }
+        if(cnt<0) return false;
+    }
+    return cnt==0;
+}
+```
+
+给定一个括号字符串str，返回最长的有效括号子串长度：c-p273.2
+
+str=(()()) 返回6， str=()) 返回2， str=()(()()( 返回4
+    使用“入栈索引”的方法来匹配
+    先入栈-1
+    遇到'('时，入栈索引
+    遇到')'时，先弹栈，如果弹栈后栈为空，入栈其索引，
+            计算此时的 t=当前索引-栈顶元素， max = Math.max(t, max);
+    最终答案是扫描完后的max。     
+    这样做会使得每次遇到 ')'时，弹栈，然后此时的栈顶元素是当前能连起来的括号集合的最左端的前一个位置（放-1的原因）。
+
+```java
+    public int getValidLen(String str) {
+        if (str == null || str.length() == 0) return 0;
+        Stack<Integer> stk = new Stack<>();
+        stk.push(-1);
+        char[] s = str.toCharArray();
+        int cnt = 0;
+        for (int i = 0; i < s.length; i++) {
+            if (s[i] == '(') {
+                stk.push(i);
+            } else {
+                stk.pop();
+                if(stk.isEmpty())
+                    stk.push(i);
+                int tmp = i - stk.peek();
+                cnt = cnt > tmp ? cnt : tmp;
+
+            }
+        }
+        return cnt;
+    }
+```
+
+
 
 
 
