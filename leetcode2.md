@@ -13975,6 +13975,175 @@ str=(()()) 返回6， str=()) 返回2， str=()(()()( 返回4
     }
 ```
 
+公式字符串求值：c-p276
+给一个字符串str，str表示一个公式，公式里可能有整数、加减乘除和左右括号，返回公式计算结果
+str=48 * ((70-65)-43)+8 * 1 返回-1816
+str=3+1* 4 返回7
+str=3 + (1* 4) 返回7
+
+显然是先中缀表达式转后缀表达式，然后后缀表达式求值
+如果是数字，直接放在后缀后面，如果是符号，则出栈直到栈顶是左括号或者优先级比自己低，然后把自己压栈；如果是左括号，直接入栈；右括号，出符号直到遇到左括号，把左括号出栈。
+
+这里需要额外考虑负数的情况，每当遇到数字时，检查它前面是不是负号，如果是，且再前面是左括号，或者再前面就没了，说明这是负数，直接取负，然后把前面的负号出栈
+
+后缀表达式求值：
+遍历表达式，直接用栈来计算值：遇到数字放入栈，遇到符号，(次栈顶 符号 栈顶) 然后把结果压栈
+
+```java
+
+    public int getValue(String infix){
+        if(infix==null || infix.length()==0) return 0;
+        ArrayList<String> list = new ArrayList<>();
+        Stack<Character> stk = new Stack<>();
+
+        HashMap<Character, Integer> map = new HashMap<>();
+        map.put('(', 0);
+        map.put('+', 1);
+        map.put('-', 1);
+        map.put('*', 2);
+        map.put('/', 2);
+
+        //get postfix by infix
+        int len = infix.length();
+        char[] s = infix.toCharArray();
+        for(int i=0;i<len;i++){
+            if(s[i]>='0' && s[i]<='9'){
+                int num = 0;
+                int tmp = i;
+                while(i<len && s[i]>='0' && s[i]<='9'){
+                    num = num * 10 + s[i]-'0';
+                    i++;
+                }
+                i--;
+                if(isNa(s, tmp)){
+                    num = -num;
+                    stk.pop();
+                }
+                list.add(String.valueOf(num));
+            }else if(s[i]=='('){
+                stk.push(s[i]);
+            }else if(s[i]==')'){
+                while(stk.peek()!='('){
+                    list.add(String.valueOf(stk.pop()));
+                }
+                stk.pop();
+            }else{
+                while(!stk.isEmpty() && map.get(stk.peek())>=map.get(s[i])){
+                    list.add(String.valueOf(stk.pop()));
+                }
+                stk.push(s[i]);
+            }
+        }
+        while(!stk.isEmpty()){
+            list.add(String.valueOf(stk.pop()));
+        }
+
+        //count value with postfix
+        Stack<Integer> stk1 = new Stack<>();
+        for(int i=0;i<list.size();i++){
+            String cur = list.get(i);
+            if(isNumber(cur)){
+                stk1.push(Integer.valueOf(cur));
+            }else{
+                int i2 = stk1.pop();
+                int i1 = stk1.pop();
+                int i3 = getResult(i1,i2,cur);
+                stk1.push(i3);
+            }
+        }
+        return stk1.pop();
+    }
+
+    public boolean isNa(char[] s, int i){
+        if(i-1>=0 && s[i-1]=='-'){
+            if(i - 2 < 0 || s[i - 2] == '(')
+                return true;
+        }
+        return false;
+    }
+
+    public int getResult(int i1, int i2, String operator){
+        if(operator.equals("+")){
+            return i1+i2;
+        }else if(operator.equals("-")){
+            return i1-i2;
+        }else if(operator.equals("*")){
+            return i1*i2;
+        }else{
+            return i1/i2;
+        }
+    }
+
+    public boolean isNumber(String s){
+        try {
+            int i = Integer.valueOf(s);
+            return true;
+        }catch (Exception e){
+            return false;
+        }
+    }
+
+```
+
+0左边必有1的二进制字符串数量：c-p278
+给定一个整数n，求由0字符与1字符组成的长度为n的所有字符串中，满足0字符的左边必有1字符的字符串数量
+
+n=1， 0，1 只有1满足要求，返回1
+n=2， 00，01，10，11 只有 10和11满足要求，返回2
+n=3 000 001 010 011 100 101 110 111    只有101 110 111满足要求，返回3
+
+p[i]表示0到i-1位置上的字符已经确定，这一段符合要求且第i-1位置的字符为’1‘时，如果穷举i到n-1位置上的所有情况会产生多少种符合要求的字符串，比如n=5，p(3)表示0到2位置上的字符已经确定，且这一段符合要求且位置2上的字符为’1‘是，假设为”101..“，在这种情况下，穷举3-4位置所有可能情况会产生多少种符合要求的字符串，因为只有10101、10110、10111，所有p(3)=3,也可以假设前三位是111.. p(3)同样也为3
+根据p(i)的定义，位置i-1的字符为1时，位置i的字符可以是1，也可以是0，如果位置i的字符是1，那么穷举剩下字符的所有可能性，，且符合要求的字符串数量就是p(i+1)的值，如果位置i的字符是0，那么位置i+1的字符必须是1，那么穷举剩下字符的所有可能性，，且符合要求的字符串数量就是p(i+1)的值
+则p(i)=p(i+1)+p(i+2), p(n-1)表示除了最后位置的字符，前面的子串全符合要求，且倒数第二个字符为’1‘，此时剩下的最后一个字符既可以是’1‘，也可以是’0‘，所以p(n-1)=2。p(n)表示所有的字符串已经完全确定，且符合要求，最后一个字符(n-1)为’1‘，所以此时符合要求的字符串数量就是0到n-1全体，不再有后续可能性，所以p(n)=1
+
+i< n-1时，p(i)=p(i+1)+p(i+2)
+i= n-1时，p(i)=2
+i=n 时，p(i)=1
+可以写出递归的形式，
+
+根据上面的结果，n为1，2，3，4，5，6，7时，结果为1，2，3，5，8，13，21，34
+形如斐波那契数列，只不过初始项是1，2所以可以用更快的方法
+dp[i]=dp[i-1]+dp[i-2];
+
+（不太理解为什么p(i)是前面确定的情况下能代表整个字符串的情况）
+
+```java
+//方法一
+public int getNum1(int n){
+    if(n<1) return 0;
+    return process(1, n);
+}
+
+public int process(int i, int n){
+    if(i==n-1){
+        return 2;
+    }
+    if(i==n){
+        return 1;
+    }
+    return process(i+1, n) + process(i+2, n);
+}
+
+
+//方法二：
+public int getNum2(int n){
+    if(n<1) return 0;
+    else if(n==1) return 1;
+    else if(n==2) return 2;
+    int pre = 1;
+    int cur = 2;
+    int tmp = 0;
+    for(int i=3;i<=n;i++){
+        tmp = cur;
+        cur += pre;
+        pre = tmp;
+    }
+    return cur;
+}
+
+```
+
+
 
 
 
