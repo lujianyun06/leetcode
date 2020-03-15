@@ -14276,8 +14276,105 @@ str=aabcb，最长无重复字符子串为abc，返回3
     }
 ```
 
+找到被指的新类型字符：c-p286
+新类型字符的定义如下：
+1.新类型字符是长度为1或者2的字符串
+2.表现形式可以仅是小写字母，如“e”，也可以是大写字母+小写字母，如“Ab”；
+还可以是大写字母+大写字母，如“DC”
+    现在给定一个字符串str，str一定是若干个新类型字符正确组合的结果，比如eaCCBi，由新类型
+e、a、CC、Bi拼成，再给定一个整数k，代表str中的位置，返回被k位置指中的新类型字符
+
+如str=aaABCDEcBCg
+k=7，返回Ec
+k=4 返回CD
+k=10 返回g
+
+    直接遍历字符串，如果s[i]等于小写字母，且i等于k，返回该小写字母，如果是大写字母，如果i或者i+1等于k，则返回s[i]s[i+1],如果不是的话，i要先加1，即要跳过一个字符。
+    
+```java
+    public String getKchar(String str, int k){
+        if(str==null || str.length()==0) return null;
+        char[] s = str.toCharArray();
+        String res = "";
+        for(int i=0;i<s.length;i++){
+            if(s[i]>='a' && s[i]<='z'){
+                if(i==k){
+                    res = String.valueOf(s[i]);
+                    break;
+                }
+            }else{
+                if(i==k || i+1==k){
+                    res = s[i]+""+s[i+1];
+                    break;
+                }
+                i++;
+            }
+        }
+        return res;
+    }
+
+```
 
 
+最小包含子串的长度：c-p288
+给定字符串str1和str2，求str1的子串中含有str2所有字符的最小子串长度
+如str=abcde，str2=ac，返回abc
+str1=12345  str2=344 最小包含子串不存在，返回0
+可以用窗口法，p1，p2，用一个total表示str2中不同字符的总数，让cur表示目前窗口中符合str2中字符的个数，如果cur==total说明当前窗口符合，然后让p1前进，直到不满足，不满足后p2再前进，可以在O(n)的复杂度完成。
+
+须用两个map，map1表示str2中每个字符的个数，map2表示当前窗口中每个字符的个数
+
+```java
+    public int minIncludedSubstring(String str1, String str2){
+        if(str1==null || str2==null || str1.length()==0 || str2.length()==0)
+            return 0;
+        int total = 0;
+        int res = Integer.MAX_VALUE;
+        int cur = 0;
+        char[] s1 = str1.toCharArray();
+        char[] s2 = str2.toCharArray();
+        HashMap<Character, Integer> map1 = new HashMap<>();
+        HashMap<Character, Integer> map2 = new HashMap<>();
+
+        for(int i=0;i<s2.length;i++){
+            if(!map2.containsKey(s2[i])){
+                total++;
+            }
+            map2.put(s2[i], map2.getOrDefault(s2[i], 0)+1);
+        }
+        int p1=0;
+        int p2=1;
+        map1.put(s1[p1], map1.getOrDefault(s1[p1], 0)+1);
+        if(map1.get(s1[p1]).equals(map2.get(s1[p1]))){
+            cur++;
+        }
+
+        while(p2<s1.length){
+            map1.put(s1[p2], map1.getOrDefault(s1[p2], 0)+1);
+            if(map2.containsKey(s1[p2]) && map1.get(s1[p2]).equals(map2.get(s1[p2]))){
+                cur++;
+            }
+            if(cur==total){
+                int tmp = p2-p1+1;
+                res = res>tmp?tmp:res;
+                while(p1<p2 && cur==total){
+                    map1.put(s1[p1], map1.get(s1[p1])-1);
+                    if(map1.get(s1[p1])<map2.getOrDefault(s1[p1],0)){
+                        cur--;
+                    }
+                    p1++;
+                    if(cur==total){
+                        tmp = p2-p1+1;
+                        res = res>tmp?tmp:res;
+                    }
+                }
+
+            }
+            p2++;
+        }
+        return res;
+    }
+```
 
 
 
