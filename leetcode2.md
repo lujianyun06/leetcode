@@ -8855,6 +8855,84 @@ set用来保存已经遍历过，或者不用再遍历的字符串
 
 ```
 
+整数回文：b41
+判断一个整数是否是回文，用O(1)的空间复杂度
+直接可以把一个数翻转过来再和原数比较是否相同即可
+```java
+public boolean isPlalindromeInt(int n){
+    if(n<0 || n==Integer.MAX_VALUE)
+        return false;
+    long rev = 0;
+    long tmp = n;
+    while(tmp>0){
+        rev = rev * 10 + tmp%10;
+        tmp /= 10;
+    }
+    return rev==(long)n;
+}
+```
+
+菜鸟网络货架：b42
+菜鸟仓库是一个很大很神奇的地方，各种琳琅满目的商品整整齐齐地摆放在一排排货架上，通常一种品类(sku)的商品会放置在货架的某一个格子中，格子设有统一的编号，方便工人们拣选。 有一天沐哲去菜鸟仓库参观，无意中发现第1个货架格子编码为1，
+第2-3个分别为1,2，第4-6个格子分别是1，2，3，第7-10个格子编号分别是1,2,3,4，每个格子编号都是0-9中的一个整数，
+且相邻格子的编号连在一起有如下规律 1|12|123|1234|...|123456789101112131415|...|123456789101112131415……n 这个仓库存放的商品品类非常丰富，共有1千万多个货架格子。沐哲很好奇，他想快速知道第k个格子编号是多少？
+首先是要确认k在哪个区间，比如上面 1是第一个区间，2，3是第二个区间，4-6是第三个区间。。
+区间中的格子数是按等差数列排的，
+int的范围：4字节,最大是21亿，由于是一千多万个货架，所以int远大于这个数
+由于int的范围是远大于千万级别的，首先就能想到一次遍历，逐个加到sum上，若sum>=k,则停止(preSum是上一个sum)
+然后要计算k所在的格子是在这个区间的第几个格子. m=k-preSum
+1位数有9个格子，2位数有10-99共90个格子，3位数有100-999 共900个格子。。。  所以找到m是属于几位数区间的格子，分别将m与9,99,999...比较，第一个小于等于的就是。
+假设m是属于3位数区间的格子，那么n=m-99就是它是三位数区间中的第几个格子。然后((n-1)/3)+1就是它属于三位数区间中的第几个数,比如，n=7 (7-1)/3=2 表示不包括它所在的这个数，前面共有2个三位数，因此它所在的数就是102，（前面是100，101）。然后再算出它是这个数中的第几位即可，7%3=1，表示是第1位（这里注意，如果是算得0，则表示是第3位），因此它的标号就是1
+
+```java
+    public int getTag(int k){
+        int sum = 0;
+        int preSum = 0;
+        for(int i=1;i<Integer.MAX_VALUE;i++){
+            preSum =sum;
+            sum += i;
+            if(k<=sum){
+                break;
+            }
+        }
+        //sum是k所在的区间的最后一个格子是整体的第几个格子
+        //m表示该格子是该区间的第几个格子
+        int m = k-preSum;
+
+        int tmp=0;  //和
+        int preTmp = 0;
+        int cnt = 0;  //位数
+        while(m>tmp){
+            cnt++;
+            preTmp = tmp;
+            tmp = tmp*10 + 9;
+
+        }
+
+        //表示m属于第cnt位数的范围内
+        //n表示是这个位数的所有数中的第几位
+        int n = m - preTmp;
+
+        //它所在的这个数前面有多少个数
+        int preNumber = (n-1)/cnt;
+        //表示当前的这个数
+        int curNumber = preTmp+preNumber+1;
+        String s = String.valueOf(curNumber);
+
+        int resPos = n-preNumber*cnt; //表示该数的第几位
+        int res = 0;
+        for(int i=0;i<s.length();i++){
+            if((resPos-1)==i){
+                res = s.charAt(i)-'0';
+            }
+        }
+        return res;
+    }
+```
+
+
+
+
 
 
 
@@ -14290,7 +14368,7 @@ k=4 返回CD
 k=10 返回g
 
     直接遍历字符串，如果s[i]等于小写字母，且i等于k，返回该小写字母，如果是大写字母，如果i或者i+1等于k，则返回s[i]s[i+1],如果不是的话，i要先加1，即要跳过一个字符。
-    
+
 ```java
     public String getKchar(String str, int k){
         if(str==null || str.length()==0) return null;
@@ -14376,10 +14454,170 @@ str1=12345  str2=344 最小包含子串不存在，返回0
     }
 ```
 
+回文最少分割数：c-p292
+给定一个字符串str，返回把str全部切成回文字符的最小分割数
+例如 str=ABA 不需要切割，str本身就是回文，返回0
+str=ACDCDCDAD 最少需要切成2次变成3个回文子串，比如A CDCDC DAD 所以返回2
+
+经典动态规划的题目，定义动态规划数组dp，dp[i]是子串str[i..len-1]至少需要切割几次，才能把str[i..len-1]全部切成回文子串，那么dp[0]就是最后的结果
+
+从右往左一次计算dp[i]的值，i初始为len-1
+1.假设j位置处在i与len-1的位置之间(i<=j< len)如果str[i..j]是回文串，那么dp[i]的值可能是dp[j+1]+1，其含义是str[i..len-1]上，既然str[i..j]是一个回文串，那么它可以自己作为一个分割的部分，剩下的部分，即(str[j+1...len-1])继续做最经济的切割，而dp[j+1]值的含义正好是str[j+1..len-1]的最少回文分割数
+2.根据步骤2的方式，让j在i到len-1位置上枚举，那么所有可能情况中的最小值就是dp[i]的值，即dp[i]=min{dp[j+1]+1 i<=j< len, 且str[i..j]必须是回文串}
+3.如何快速判断str[i..j]是回文串，具体过程如下：
+    1）定义一个二维数组boolean[][]p 如果p[i][j]值为true，说明str[i..j]是回文串，否则不是，在计算dp数组过程中，能够同步，快速地计算出p
+    2）p[i][j]如果是true，一定是以下的三种情况：
+        >1 str[i..j]由1个字符组成，
+        >2 str[i..j]由两个字符组成，且两个字符相等
+        >3 str[i+1..j-1]是回文串，即p[i+1][j-1]为true，且str[i]==str[j]，即str[i..j]上首尾两个字符相等
+    3）在计算dp数组的过程中，位置i是从右往左计算的，对于每一个i来说，又依次从i位置向右枚举所有的位置j(i<=j < len )以此来决策出dp[i]的值，所以对p[i][j]来说，p[i+1][j-1]值一定已经计算过，这就使判断一个子串是否为回文串变成极为方便。
+4.最终返回dp[0]的值
+
+```java
+public int minCut(String str){
+    if(str==null || str.length()==0) return 0;
+    char[] chas = str.toCharArray();
+    int len = chas.length;
+    int[] dp = new int[len+1];
+
+    dp[len] = -1;
+    boolean[][] p = new boolean[len][len];
+    for(int i=len-1;i>=0;i++){
+        dp[i]=Integer.MAX_VALUE;
+        for(int j=i;j<len;j++){
+            if(chas[i]==chas[j] && (j-i<2 || p[i+1][j-1])){
+                p[i][j]=true;
+                dp[i] = Math.min(dp[i], dp[j+1]+1);
+            }
+        }
+    }
+    return
+}
+```
+
+字符串匹配问题：c-p294
+给定字符串str，其中绝对不含字符.和* 再给定字符串exp，其中可以含有.或* 
+* 不能是exp的首字符，且任意两个* 字符不相邻，exp中的.代表任何一个字符，exp中的* 表示* 前一个字符可以有0个或多个，请写一个函数，判断str能否被exp匹配
+
+step1：
+先匹配原串和匹配串的第一个字符
+
+//如果不匹配：
+    1.如果匹配串第二个是 *，则继续匹配，原串=原串，匹配串=匹配串第3个字符开始的子串（跳过第1、2个字符）。返回step1
+    2.如果匹配串第二个不是* ，则失败
+//如果匹配：
+    1.如果匹配串第二个是*
+        1.原串=原串第2个字符开始的子串（跳过第1个字符），匹配串=匹配串，返回step1 (即要这个匹配的字符，后面的仍可能是匹配串的第一个字符)
+        2.原串=原串，匹配串=匹配串第3个字符开始的子串（跳过第1、2个字符），返回step1 （即看如果不要这个匹配的字符，后面的是否匹配） 
+        如果1和2中有任意一种可匹配成功，则成功
+    2.如果匹配串第二个不是* ，原串和匹配串都跳过第一个字符，继续匹配，返回step1
 
 
+```java
+    public boolean isMatch(String str, String exp){
+        if(exp.isEmpty())
+            return str.isEmpty();
 
+        boolean firstMatch = !str.isEmpty() && (str.charAt(0)==exp.charAt(0) || exp.charAt(0)=='.');
 
+        //首字符不匹配
+        if(!firstMatch){
+            if(exp.length()==1 || exp.charAt(1)!='*') return false;
+            else {
+                return isMatch(str, exp.substring(2));
+            }
+        }else{
+            //首字符匹配,且第二个是*
+            if(exp.length()>1 && exp.charAt(1)=='*'){
+                return isMatch(str.substring(1), exp) || isMatch(str, exp.substring(2));
+            }else{ //首字符匹配，且第二个不是*
+                return isMatch(str.substring(1), exp.substring(1));
+            }
+        }
+
+    }
+
+``` 
+
+字典树的实现：c-p299
+实现字典树，并实现,假设字符都是a到z
+insert，添加word，可以重复添加
+delete 删除word，如果word有多个，仅删除一个
+search 查询word是否在字典中
+prefixNumber：返回以字符串pre为前缀的单词数量
+
+```java
+
+    public class Tire{
+        private int wordCount;
+        private boolean isWord;
+        private Tire[] table = new Tire[26];
+
+        Tire(){
+            isWord = false;
+            wordCount = 0;
+
+        }
+
+        void insert(String word){
+            char[] s = word.toCharArray();
+            Tire cur = this;
+            for(int i=0;i<s.length;i++){
+                int index = s[i]-'a';
+                if(cur.table[index]==null){
+                    cur.table[index] = new Tire();
+                }
+                cur = cur.table[index];
+                if(i==s.length-1){
+                    cur.isWord = true;
+                    cur.wordCount++;
+                }
+            }
+        }
+
+        void delete(String word){
+            char[] s = word.toCharArray();
+            Tire cur = this;
+            for(int i=0;i<s.length;i++){
+                int index = s[i]-'a';
+                cur = cur.table[index];
+                if(i==s.length-1){
+                    cur.wordCount = Math.max(cur.wordCount-1, 0);
+                    cur.isWord = cur.wordCount!=0;
+                }
+            }
+        }
+
+        boolean search(String word){
+            char[] s = word.toCharArray();
+            Tire cur = this;
+            for(int i=0;i<s.length;i++){
+                int index = s[i]-'a';
+                cur = cur.table[index];
+            }
+            return cur.isWord;
+        }
+
+        int prefixNumber(String pre){
+            char[] s = pre.toCharArray();
+            Tire cur = this;
+            for(int i=0;i<s.length;i++){
+                int index = s[i]-'a';
+                cur = cur.table[index];
+            }
+            return findWord(cur);
+        }
+
+        private int findWord(Tire root){
+            if(root==null) return 0;
+            int res = root.wordCount;
+            for(int i=0;i<26;i++){
+                res += findWord(root.table[i]);
+            }
+            return res;
+        }
+    }
+```
 
 
 
@@ -14404,6 +14642,7 @@ str1=12345  str2=344 最小包含子串不存在，返回0
 
 ********************** dxc 多线程题 **************************
 
+d1
 2个线程交替打印1到10
 ```java
 
@@ -14446,6 +14685,89 @@ str1=12345  str2=344 最小包含子串不存在，返回0
         t2.start();
     }
 ```
+
+d2. 共计9个苹果，有2只猴子，一个猴子每次拿2个苹果，一个猴子每次拿3个苹果，如果剩余的苹果不够猴子每次拿的数量，则2只猴子停止拿苹果，请用java多线程模拟上面的描述
+
+```java
+
+    public void monkey(){
+        Semaphore mutex = new Semaphore(1);
+        AtomicInteger apple = new AtomicInteger(9);
+        CountDownLatch latch = new CountDownLatch(2);
+
+        Thread t2 = new Thread(new Runnable(){
+            @Override
+            public void run() {
+                while (apple.get()>=2) {
+                    try {
+                        mutex.acquire();
+                        if (apple.get() >= 2) {
+                            apple.getAndDecrement();
+                            apple.getAndDecrement();
+                            System.out.println("消耗2苹果");
+                        }else {
+                            break;
+                        }
+                        mutex.release();
+
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+                System.out.println("苹果不够了");
+                latch.countDown();
+            }
+        });
+
+        Thread t3 = new Thread(new Runnable(){
+            @Override
+            public void run() {
+                while (apple.get()>=3) {
+                    try {
+                        mutex.acquire();
+                        if (apple.get() >= 3) {
+                            apple.getAndDecrement();
+                            apple.getAndDecrement();
+                            apple.getAndDecrement();
+                            System.out.println("消耗3苹果");
+                        }else {
+                            break;
+                        }
+                        mutex.release();
+
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+                System.out.println("苹果不够了");
+                latch.countDown();
+            }
+        });
+
+        t2.start();
+        t3.start();
+        try {
+            latch.await();
+            System.out.println("剩余苹果数="+apple.get());
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
