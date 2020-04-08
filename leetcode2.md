@@ -8930,10 +8930,123 @@ int的范围：4字节,最大是21亿，由于是一千多万个货架，所以i
     }
 ```
 
+b43:
+有一副扑克牌，其中A, 2, 3, ..., 10各4张，A代表1。现在可以按一下方式打出牌：
+
+单牌：一张牌。例如3
+对子：数字相同的两张牌。例如77
+顺子：数字连续的五张牌。例如A2345
+连队，如 223344
+输入10个整数，表示每张牌的个数。输出打光手中所有牌需要的最少次数。
+如果直接用dfs，在小数字情况下能过，但数字一大就不行了
+往上说用十维数组dp来进行记忆化搜索，5^10 int = 10MB 左右，在idea上试验了根本无法进行，所需空间太大了。最终还是没有想到更好的方法
 
 
+腾讯面试：
+b44
+1. 一个整形数组中，判断是否存在三个数a b c, 使得a+b+c=0
+例如：-3 9 2 -4 1    -->   true  (其中-3+2+1满足条件)
+bool FindSumZero(int* A, int n);
 
 
+b45
+2. 有一堆节点，判断这些节点是否组成一棵合法的树，节点值是唯一的。
+struct Node
+{
+    Node* left;
+    Node* right;
+    unsigned int value;
+};
+
+bool IsLegalTree(const vector<Node>& vecNode);
+
+b46
+3. 给定一个数组，找到不同的下标，使得 A[i]&A[j]最大，并输出该最大值。
+int FindMax(int* A, int n);
+
+```java
+ 
+    boolean findSumZero(int[] A, int n){
+        Arrays.sort(A);
+        int p1 = 0;
+        int p2 = A.length;
+         for(int i=0;i<A.length;i++){
+             int target = 0-A[i];
+             if(getTwoSum(i, A, target)){
+                 return true;
+             }
+         }
+        return false;
+    }
+    
+    boolean getTwoSum(int cur, int[] A, int target){
+        int p1 = 0;
+        int p2 = A.length-1;
+        while(p1<p2){
+            int sum = A[p1]+A[p2];
+            if(target==sum){
+                return true;
+            }else if(target>sum){
+                p1++;
+                if(p1==cur) p1++;
+            }else{
+                p2--;
+                if(p2==cur) p2--;
+            }
+        }
+        return false;
+    }
+    
+    class Node{
+        Node left;
+        Node right;
+        int value;
+    }
+    
+    
+    boolean isLegalTree(ArrayList<Node> nodes){
+        if(nodes==null) return false;
+        if(nodes.size()==0) return true;
+        HashSet<Node> childrens = new HashSet<>();
+        boolean[] flag = new boolean[nodes.size()];
+        for(int i=0;i<nodes.size();i++){
+            Node cur = nodes.get(i);
+            if(cur.left!=null){
+                if(!childrens.add(cur.left))
+                    return false;
+                flag[nodes.indexOf(cur.left)]=true;
+            }
+            if(cur.right!=null){
+                if(!childrens.add(cur.right)){
+                    return false;
+                }
+                flag[nodes.indexOf(cur.right)]=true;
+            }
+        }
+        
+        int rootCnt = 0;
+        int rootIndex = 0;
+        for(int i=0;i<flag.length;i++){
+            if(flag[i]==false){
+                rootCnt++;
+                rootIndex = i;
+            }
+        }
+        return rootCnt==1;
+    }
+    
+    
+    int FindMax(int[] A,){
+        Arrays.sort(A);
+        for(int i=A.length-1;i>=0;i--){
+            for(int j=i-1;j>=0;j--){
+
+            }
+        }
+        return 0;
+              
+    }
+```
 
 
 
@@ -14676,6 +14789,176 @@ prefixNumber：返回以字符串pre为前缀的单词数量
 申请一个长度为2148的无符号整型数组arr[0...2147], arr[i]表示第i区间有多少个数
 arr[i]必然小于10MB，遍历40亿个数，如果遍历到当前数位num，先看num落在哪个区间上（num/2M）然后将对应进行arr[num/2M]++操作，这样遍历下来，得到每一个区间的数的出现情况。通过累加每个区间的出现次数，就可以找到40亿个数的中位数，比如0到K-1个区间上的数共19.998亿，但发现加上第K个区间上的数就超过了20亿，就可以知道第20亿个数是第K个区间上的数，且其是第K个区间上的第0.002亿个数。
 然后申请一个长度为2MB的无符号整型数组count[0...2M-1]，占用空间8M，然后遍历40亿个数，此时只关心处在第K个区间上的数numi，其他数忽略，然后将count[numi-K* 2M]++, 也就是只对第K个区间上的数做频率统计，遍历完40亿个数之后，就得到了第K个区间的词频统计结果count，累加直到找到第0.002亿个数即可。
+
+
+不用额外变量交换两个整数的值：317
+不用额外变量交换两数的值
+```java
+public void swap1(int[] a, int[] b){
+    a[0] = a[0]+b[0];
+    b[0] = a[0] - b[0];
+    a[0] = a[0] - b[0];
+}
+
+
+public void swap2(int[] a, int[] b){
+    a[0] = a[0]^b[0];
+    b[0] = a[0]^b[0];
+    a[0] = a[0]^b[0];
+}
+```
+
+不用任何比较判断找出两个数中比较大的数：c-p318
+给定两个32位整数a和b，返回a和b中比较大的，且不能用任何判断符号
+
+方法一：得到a-b的值的符号，就可以知道是a大还是b大了
+sign函数的功能是返回整数n的符号，正数返回1，负数返回0. flip函数的功能是如果n为1，返回0；如果n为0，返回1
+所以，如果a-b结果为0或正数，那么scA为1，scB为0，如果a-b的值是负数，那么scA为0，scB为1.scA和scB必有一个为1，另一个必为0.所以return a* scA+b * scB；就是根据a-b的值的状况，选择要么返回a，要么返回b
+
+方法一有局限性，如果a-b的值出现溢出，返回结果就不正确
+
+方法二：
+如果a的符号和b的符号不同（difSab==1， sameSab==0），则有：
+    如果a为0或为正，那么b为负（sa==1， sb==0），应该返回a
+    如果a为负，那么b为0或为正（sa==0，sb==1），应该返回b
+如果a的符号和b的符号相同（difSab==0， sameSab==1），这种情况下，a-b的值绝对不会溢出，则有：
+    如果a-b为0或为正（sc==1）返回a
+    如果a-b为负（sc==0）返回b
+综上所述，应该返回 a * （difSab* sa+ sameSab* sc）+  b * flip（difSab* sa+ sameSab* sc）
+
+
+```java
+public int flip(int n){
+    return n^1;
+}
+
+public int sign(int n){
+    return flip((n>>31) & 1);
+}
+
+public int getMax1(int a, int b){
+    int c = a-b;
+    int scA = sign(c);
+    int scB = flip(scA);
+    return a * scA + b * scB;
+}
+
+public int getMax2(int a, int b){
+    int c = a-b;
+    int sa = sign(a);
+    int sb = sign(b);
+    int sc = sign(c);
+    int difSab = sa ^ sb;
+    int sameSab = flip(difSab);
+    int returnA = difSab * sa + sameSab * sc;
+    int returnB = flip(returnA);
+    return a * returnA + b * returnB;
+}
+
+```
+
+只用位运算不用算术运算实现整数的加减乘除运算：c-p319
+给定两个32位整数a和b，可正，可负，可0，不能使用算术运算符，分别实现a和b的加减乘除运算
+不考虑溢出
+
+用位运算实现加法，如果不考虑进位，a^b就是正确结果。
+在只算进位的情况下，也就是只考虑a加b的过程中进位产生的值是什么，结果就是(a&b)<<1，因为在第i位只有1与1相加才会产生进位。
+
+把完全不考虑进位的相加值与只考虑进位的产生值再相加，就是最终的结果，也就是说，一直重复这样的过程，直到进位产生的值完全消失，说明所有的过程都加完了。
+```java
+public int add(int a, int b){
+    int sum=a;
+    while(b!=0){
+        sum = a^b;
+        b = (a&b)<<1;
+        a = sum;
+    }
+}
+```
+
+
+用位运算实现减法运算，实现a-b只要实现a+(-b)即可，根据二进制数在机器中表达的规则，得到一个数的相反数，就是这个数的二进制数表达取反加1的结果，，得到b的相反数-b后，再与a进行加法
+```java
+int negNum(int n){
+    return add(~n, 1);
+}
+
+public int minus(int a, int b){
+    return add(a, negNum(b));
+}
+```
+
+用位运算实现乘法运算，axb的结果可以写成：ax2^0xb0+ax2^1xb1+...+ax2^31xb31
+其中，bi为0或1代表整数b的二进制数表达中第i位的值，
+
+举例：a=22=000010110，b=13=000001101，res=0
+b的最右侧为1，所以res=res+a，同时b右移一位，a左移一位(左移一位即乘2)
+a=000101100, b=000000110
+b最右侧为0，所以res不变，b右移一位，a左移一位
+a=001011000，b=000000011
+b最右侧为1，res=res+a，同时b右移一位，a左移一位。
+a=010110000，b=000000001
+b最右侧为1，res=res+a，同时b右移一位，a左移一位。
+a=101100000，b=000000000
+此时b为0，过程停止，返回res=100011110，即286
+不管a和b是正，负，还是0，上述过程都是对的，因为都满足ax2^0xb0+ax2^1xb1+...+ax2^31xb31
+```java
+public int multi(int a, int b){
+    int res = 0;
+    while(b!=0){
+        if((b&1)!=0){
+            res = add(res,a);
+        }
+        a << =1;
+        b >>> = 1;
+    }
+    return res;
+}
+```
+
+用位运算实现除法运算，其实就是乘法的逆运算。
+其实就是找到a能包含的最大部分（指b* 2^x ）然后让a减去这个最大部分，再让剩下的a找到次大部分，并依次找下去。以上过程只适用于a和b都不是负数的时候，所以，如果a和b中有一个为负数或都为负数时，可以先把a和b转成正数，计算完后再看res的真实符号是什么就可以。
+```java
+public int div(int a, int b){
+    int x = isNeg(a)?negNum(a):a;
+    int y = isNeg(b)?negNum(b):b;
+    int res = 0;
+    for(int i=31; i > -1; i= minus(i, 1)){
+        if((x>>i)>=y){
+            res |= (1<<i);
+            x = minus(x, y<<i);
+        }
+    }
+    return isNeg(a) ^ isNeg(b)?negNum(res):res;
+}
+```
+上述方法可以计算绝大多数情况，但32位整数最小值为-2147483648，最小值的绝对值比最大值的绝对值大1，所以，如果a或b等于最小值，是转不成相应正数的，总结如下：
+1.如果a和b都不为最小值，直接使用上述过程，返回div(a,b)
+2.如果a和b都为最小值，a/b的结果为1，直接返回1
+3.如果a不为最小值，b为最小值，a/b结果为0，直接 返回0
+4.如果a为最小值，b不为最小值，只能把最小值增加一点，计算出一个结果，然后根据这个结果修正一下，得到最终结果
+```java
+public int divide(int a, int b){
+    if (b==0) {
+        throw new RuntimeException("divisor is 0");
+    }
+    if(a==Integer.MIN_VALUE && b==Integer.MIN_VALUE){
+        return 1;
+    }else if(b==Integer.MIN_VALUE){
+        return 0;
+    }else if(a==Integer.MIN_VALUE){
+        int res = div(add(a, 1), b);
+        return add(res, div(minus(a, multi(res, b)), b));
+    }else{
+        return div(a, b);
+    }
+
+}
+```
+
+
+
+
 
 
 
