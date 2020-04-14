@@ -14827,7 +14827,7 @@ sign函数的功能是返回整数n的符号，正数返回1，负数返回0. fl
 综上所述，应该返回 a * （difSab* sa+ sameSab* sc）+  b * flip（difSab* sa+ sameSab* sc）
 
 
-```java
+```Java
 public int flip(int n){
     return n^1;
 }
@@ -14956,10 +14956,254 @@ public int divide(int a, int b){
 }
 ```
 
+整数的二进制表达中有多少个1：c-p325
+
+最简单的解法：整数n每次进行无符号右移一位，检查最右边的位是否为1来进行统计。
+```java
+public int count1(int n){
+    int res = 0;
+    while(n!=0){
+        res += n&1;
+        n >>>= 1;
+    }
+    return res;
+}
+```
+
+方法二：每次进行 n&=(n-1)操作，接下来while循环中可以忽略掉bit位上为0的部分
+例如：n=01000100 n-1=01000011   n&(n-1)=01000000
+n&(n-1)操作的实质是抹掉最右边的1
+因此，持续这个操作直到n&(n-1)为0，说明其中没有1了。抹了几次，就证明n中有几个1
+```java
+public int count2(int n){
+    int res = 0;
+    while(n!=0){
+        n&=(n-1);
+        res++;
+    }
+    return res;
+}
+```
+
+在其他数都出现偶数次的数组中找到出现奇数次的数：c-p327
+给定一个整形数组arr，其中只有一个数出现了奇数次，其他数都是偶数次，打印这个数
+所有的数都做异或，由于0^x=x, x^x=0，所以最终剩下的一定是那个只出现了奇数次的数
+```java
+public int getOddCntNum(int[] arr){
+    int res = 0;
+    for(int e: arr){
+        res = res^e;
+    }
+    return res;
+}
+``` 
+
+有两个数出现了奇数次，其他数都是偶数次，打印这俩数：c-p327
+跟之前的，数组中两个数出现了1次，其他数出现了两次的那题做法一样，
+首先把所有数都异或，结果其实就是这两个奇数数的异或值，设为x
+x&(x-1) 得到x的最右端的1及其后面都为1，左边都为0的数，设为y
+令x&y 得到只保留x最右端的1，其他位全为0的数。这一位是数组中两个数不同的位。让数组中所有数与上该数，得0的分一类异或，不得0的分一类异或，最终两个异或的结果就是两个奇数次的数
+
+```java
+    public void findTwoNum(int[] res, int[] arr){
+        int xor = 0;
+        for(int e:arr){
+            xor ^= e;
+        }
+        int tmp = (xor^(xor-1));
+        res[0]=0;res[1]=0;
+        xor = xor&tmp;
+        for(int e: arr){
+            if((xor&e)==0){
+                res[0] = res[0]^e;
+            }else{
+                res[1] = res[1]^e;
+            }
+        }
+    }
+```
+
+在其他数都出现k次的数组中找到只出现一次的数：c-p329
+给定一个整型数组arr和一个大于1的整数k，已知arr中只有1个数出现了1次，其他数都出现了k次，请返回这个只出现了1次的数，要求tO(n)+sO(1)
+同题见：137，j-p278
+**任何两个k进制数c和d，在i位上的无进位相加结果就是(c(i)+d(i))%k**
+
+    假设输入中没有single number，那么输入中的每个数字都重复出现了数字，也就是说，对这32位中的每一位i而言，所有的输入加起来之后（每一位的和都是独立的10进制数），第i位一定是3的倍数。现在增加了single number，那么对这32位中的每一位做相同的处理，也就是说，逐位把所有的输入加起来，并且看看第i位的和除以3的余数，这个余数就是single numer在第i位的取值。这样就得到了single number在第i位的取值。这等价于一个模拟的二进制，接着只需要把这个模拟的二进制转化为十进制输出即可。
+    
+    为了完成上面的过程，需要使用一个数组 int a[ 32 ]来模拟位运算。
+    可以看出来，这个做法对于功力的要求非常高，需要看到数字的时候，眼前展现的是数字背后的二进制组成，要不然很难想到可以逐位去处理。
+    例如，[5，5，5，1]  5的二进制：101  每一个数字转成二进制后，叠加逐个位，但叠加的和是以10进制的形式的，如 3个5逐位叠加后是 303， 1的二进制是001，加上后是304  3%3=0，0%3=0，4%3=1  故唯一的那个数的二进制表示是001
+
+```java
+    public int findSingleNum(int[] arr, int k){
+        int res = 0;
+        int flag = 0x80000000;
+        for(int i=31;i>=0;i--){
+            int tmp = 0;
+            for(int e:arr){
+                tmp += e&flag;
+            }
+            res = res<<1;
+            if(tmp%k!=0){
+                res += 1;
+            }
+            flag = flag>>>1;
+        }
+        return res;
+    }
+```
+
+转圈打印矩阵：c-p331
+给定一个整型矩阵matrix，请按照转圈的方式打印它
+：j29-p161，54，59
+安装右，下，左，上来规定方向向量，每到头了，就换方向继续打印，直到
+```java
+    public void printMatrix(int[][] m){
+        int lBound = 0;
+        int rBound = m[0].length-1;
+        int uBound = 1;
+        int bBound = m.length-1;
+        int[] dir = new int[]{0,1,2,3};
+        int x = 0, y = 0;
+        int curDir = dir[0];
+        int num = m.length * m[0].length;
+        ArrayList<Integer> list = new ArrayList<>();
+        for(int i=0;i<num;i++){
+            list.add(m[x][y]);
+            if(curDir==0){
+                if(y==rBound){
+                    curDir+=1;
+                    x++;
+                    rBound--;
+                }else{
+                    y++;
+                }
+            }else if(curDir==1){
+                if(x==bBound){
+                    curDir+=1;
+                    y--;
+                    bBound--;
+                }else{
+                    x++;
+                }
+            }else if(curDir==2){
+                if(y==lBound){
+                    curDir++;
+                    x--;
+                    lBound++;
+                }else{
+                    y--;
+                }
+            }else{
+                if(x==uBound){
+                    curDir=0;
+                    y++;
+                    uBound++;
+                }else{
+                    x--;
+                }
+            }
+        }
+        for(int i=0;i<list.size();i++){
+            if(i==0){
+                System.out.print(list.get(i));
+            }else{
+                System.out.print(","+list.get(i));
+            }
+        }
+    }
+```
+
+将一个正方形矩阵顺时针转动90°：c-p333
+给定一个n* n的矩阵matrix，把这个矩阵顺时针转动90°，要求额外空间复杂度为O(1)
+
+1 2 3 4
+5 6 7 8
+9 10 11 12
+13 14 15 16
+
+转后为：
+
+13 9 5 1
+14 10 6 2
+15 11 7 3
+16 12 8 4
+
+在笛卡尔坐标系中，顺时针旋转90度，就是先做y=x的轴对称，再做x轴的轴对称
+原点是矩阵的中心，
+因此，先做y=x的轴对称，即m[i][j] swap m[n-1-j][n-1-i] 
+对于n阶矩阵，第一行交换n个，第二行交换n-1个。。。。第n行交换1个
+
+然后再做x轴的轴对称，对于前n/2行中的元素（变换后的），均进行m[i][j] swap m[n-1-i][j]
+
+```java
+    public void rotate(int[][] m){
+        int n = m.length;
+        int t = n;
+        for(int i=0;i<n;i++){
+            for(int j=0;j<t;j++){
+                int tmp = m[i][j];
+                m[i][j] = m[n-j-1][n-1-i];
+                m[n-j-1][n-1-i] = tmp;
+            }
+            t--;
+        }
+
+        for(int i=0;i<n/2;i++){
+            for(int j=0;j<n;j++){
+                int tmp = m[i][j];
+                m[i][j] = m[n-1-i][j];
+                m[n-1-i][j] = tmp;
+            }
+        }
+    }
+```
+
+之字形打印矩阵：c-p335
+给定一个矩阵m，按照之字形打印这个矩阵，注意，这个不是锯齿形的，要有所区别。例如：
+1 2 3 4
+5 6 7 8
+9 10 11 12
+打印结果：1 2 5 9 6 3 4 7 10 11 8 12
+要求额外空间复杂度O(1)
+
+1.上坐标(tR,tC)初始为(0,0)，先沿着矩阵第一行移动(tC++),当到达第一行最右边的元素后，再沿着矩阵最后一列移动(tR++)
+2.下坐标(dR,dC)初始为(0,0)，先沿着矩阵第一列移动(dR++),当到达第一列最下边的元素后，再沿着矩阵最后一行移动(dC++)
+3.上坐标与下坐标同步移动，每次移动后上坐标与下坐标的连线就是矩阵中的一条斜线，打印斜线上的元素即可。
+4.如果上次斜线是从左下向右上打印的，这次一定是从右上向左下打印，反之亦然，即可以把打印方向用boolean表示，每次取反即可。
 
 
+```java
+public void printMatrix(int[][] m){
+    int tR = 0;
+    int tC = 0;
+    int dR =0;
+    int dC = 0;
+    int endR = m.length-1;
+    int endC = m[0].length-1;
+    boolean fromUp = false;
+    while(tR!=endR+1){
+        printLevel(m ,tR, tC, dR, dC, fromUp);
+        tR = tC==endC?tR+1:tR;
+        tC = tC == endC?tC:tC+1;
+        dC = dR == endR?dC+1:dC;
+        dR = dR == endR?dR:dR+1;
+        fromUp = !fromUp;
+    }
+}
 
-
+public void printLevel(int[][] m, int tR, int tC, int dR, int dC, boolean f){
+    if(f){
+        while(tR!=dR+1){
+            System.out.print(m[tR++][tC--] + " ");
+        }
+    }else{
+        while(dR!=tR-1){
+            System.out.print(m[dR--][dC++] + " ");
+        }
+    }
+}
+```
 
 
 
