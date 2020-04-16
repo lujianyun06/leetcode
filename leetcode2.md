@@ -9048,6 +9048,350 @@ int FindMax(int* A, int n);
     }
 ```
 
+b45.
+有一个int型整数，比如1289，只允许你交换其中两个数字，使得到的数字尽量大。1289的答案就是9281
+首先把所有的数字都保存到数组中，先从左到右遍历数字，如果一直是不升序，说明该数已经最大。
+
+然后设置两个位置pos1和pos2，pos2从右往左移动，pos1从左往右移动，
+pos2遍历从右往左的最大数字，pos1为最左边。如果pos2==pos1，或者arr[pos2]==arr[pos1],则pos1++，pos2继续从右往左走。如果不满足，则交换pos1和pos2，返回
+
+
+```java
+    public int swap(int n){
+        StringBuilder builder = new StringBuilder(String.valueOf(n));
+        int pos1 = 0;
+        boolean isLargest = true;
+        for(int i=1;i<=builder.length();i++){
+            if(Integer.valueOf(builder.charAt(i-1))<Integer.valueOf(builder.charAt(i))){
+                isLargest = false;
+                break;
+            }
+        }
+        if(isLargest) return n;
+        StringBuilder res = new StringBuilder(builder);
+        while(pos1!=builder.length()){
+            int max = Integer.valueOf(builder.substring(builder.length()-1, builder.length()));
+            int pos2 = builder.length()-1;
+            for(int i=builder.length()-1; i>=pos1;i--){
+
+                if(max< Integer.valueOf(builder.substring(i, i+1)) && pos2!=i){
+                    pos2 = i;
+                    max = Math.max(max, Integer.valueOf(builder.substring(i, i+1)));
+                }
+
+
+            }
+            if(Integer.valueOf(builder.substring(pos1, pos1+1))==max){
+                pos1++;
+            }else{
+                String tmp = builder.substring(pos1, pos1+1);
+                res = builder.replace(pos1,pos1+1, builder.substring(pos2,pos2+1));
+                res = res.replace(pos2,pos2+1, tmp);
+                break;
+            }
+        }
+        return Integer.valueOf(res.toString());
+    }
+```
+
+b46
+使用“生产者-消费者模式”编写代码实现：线程A随机间隔（10~ 200ms）按顺序生成1到100的数字（共100个），
+放到某个队列中.线程B、C、D即时消费这些数据，线程B消费所有被3整除的数，
+线程C消费所有被5整除的数，其它的由线程D进行消费。线程BCD消费这些数据时在控制台中打印出来，
+要求按顺序打印这些数据
+限时40分钟，可以查API
+
+```java
+
+    public void test1(){
+        ReentrantLock lock = new ReentrantLock();
+        Condition b = lock.newCondition();
+        Condition c = lock.newCondition();
+        Condition d = lock.newCondition();
+        LinkedList<Integer> queue = new LinkedList<>();
+        CountDownLatch latch = new CountDownLatch(1);
+        Thread at = new Thread(){
+            @Override
+            public void run() {
+                try {
+                    latch.await();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                for(int i=1;i<=100;i++) {
+                    try {
+                        lock.lock();
+                        if(i%3==0){
+                            b.signal();
+
+                        }else if(i%5==0){
+                            c.signal();
+
+                        }else{
+                            d.signal();
+
+                        }
+                        queue.add(i);
+                    } finally {
+                        lock.unlock();
+                    }
+                    try {
+                        Thread.sleep((long) (Math.random()*(200-10)+10));
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+
+            }
+        };
+
+        Thread bt = new Thread(){
+            @Override
+            public void run() {
+                while (true) {
+                    try {
+                        lock.lock();
+                        b.await();
+                        System.out.println(queue.poll());
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    } finally {
+                        lock.unlock();
+                    }
+                }
+            }
+        };
+
+        Thread ct = new Thread(){
+            @Override
+            public void run() {
+                while (true) {
+                    try {
+                        lock.lock();
+                        c.await();
+                        System.out.println(queue.poll());
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    } finally {
+                        lock.unlock();
+                    }
+                }
+            }
+        };
+        Thread dt = new Thread(){
+            @Override
+            public void run() {
+                while (true) {
+                    try {
+                        lock.lock();
+                        d.await();
+                        System.out.println(queue.poll());
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    } finally {
+                        lock.unlock();
+                    }
+                }
+            }
+        };
+
+        at.start();
+        bt.start();
+        ct.start();
+        dt.start();
+        latch.countDown();
+    }
+```
+
+b47.
+有一个 String 类型数组 arr = { "a", "b", "d", "d", "a", "d", "a", "e", "d", "c" }，请编码实现统计该数组中字符重复次数并由多到少的顺序对 a,b,c,d,e 重新排序输出。
+
+```java
+    public void sort(String[] arr){
+        HashMap<String, Integer> map = new HashMap<>();
+        ArrayList<String> list = new ArrayList<>();
+        HashSet<String> set = new HashSet<>();
+        for(String s:arr){
+            map.put(s, map.getOrDefault(s, 0)+1);
+            if(set.add(s)){
+                list.add(s);
+            }
+        }
+
+        list.sort(new Comparator<String>() {
+            @Override
+            public int compare(String o1, String o2) {
+                if(map.get(o1)<map.get(o2)){
+                    return 1;
+                }else if(map.get(o1)>map.get(o2)){
+                    return -1;
+                }else{
+                    return o1.compareTo(o2);
+                }
+            }
+        });
+
+        for (int i=0;i<list.size();i++){
+            if(i!=0) System.out.print(", "+ list.get(i));
+            else System.out.print(list.get(i));
+        }
+
+    }
+```
+
+b48.
+三个线程交替打印 abcabcabc…，一个打印 a，一个打印 b，一个打印 c。
+
+```java
+
+    public void print(){
+        ReentrantLock lock = new ReentrantLock();
+        Condition ca = lock.newCondition();
+        Condition cb = lock.newCondition();
+        Condition cc = lock.newCondition();
+
+        Thread a = new Thread(){
+            @Override
+            public void run(){
+                while(true){
+                    try{
+                        lock.lock();
+                        ca.await();
+                        System.out.println("a");
+                        cb.signal();
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    } finally{
+                        lock.unlock();
+                    }
+                }
+            }
+        };
+
+        Thread b = new Thread(){
+            @Override
+            public void run(){
+                while(true){
+                    try{
+                        lock.lock();
+                        cb.await();
+                        System.out.println("b");
+                        cc.signal();
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    } finally{
+                        lock.unlock();
+                    }
+                }
+            }
+        };
+
+        Thread c = new Thread(){
+            @Override
+            public void run(){
+                while(true){
+                    try{
+                        lock.lock();
+                        cc.await();
+                        System.out.println("c");
+                        ca.signal();
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    } finally{
+                        lock.unlock();
+                    }
+                }
+            }
+        };
+
+        a.start();
+        b.start();
+        c.start();
+
+        try{
+            lock.lock();
+            ca.signal();
+        }finally{
+            lock.unlock();
+        }
+
+    }
+```
+
+b49
+现在很多家长都会送小孩子去培训中心学习舞蹈，
+有一次舞蹈培训中心考试，因为小孩子要哄着才能更喜欢学，
+所以老师给孩子们准备了小贴纸奖励孩子，
+考试结束以后孩子们按照大小个站成一排，老师按照顺序给孩子们
+发小贴纸，每个孩子都会至少得到一个小贴纸，因为是按照大小个
+站成一排的，所以相邻的孩子成绩略有高低，为了鼓励相邻孩子
+向成绩好的孩子学习，成绩高的孩子会比成绩弱的孩子得到的小贴纸多，
+请问需要多少小贴纸发给孩子们？
+```java
+    public int[] test(int[] children){
+        int[] card = new int[children.length];
+        int len = card.length;
+        for(int i=0;i<len;i++){
+            card[i]=1;
+        }
+
+        boolean change = false;
+        do{
+            change = false;
+            for(int i=0;i<len;i++){
+                if(i<len-1){
+                    if(children[i]>children[i+1] && card[i]<=card[i+1]){
+                        card[i] = card[i+1]+1;
+                        change = true;
+                    }else if(children[i]<children[i+1] && card[i]>=card[i+1]){
+                        card[i+1] = card[i]+1;
+                        change = true;
+                    }
+                }
+            }
+
+        }while(change);
+
+        int num = 0;
+        for(int e:card){
+            num += e;
+        }
+        return card;
+    }
+```
+
+
+b50.统计一个文件有多少行
+```java
+    public void test1() throws FileNotFoundException {
+        FileInputStream fis = new FileInputStream("test.txt");
+        Scanner in = new Scanner(fis);
+        int cnt = 0;
+        while (in.hasNextLine()){
+            String s = in.nextLine();
+            cnt++;
+        }
+        in.close();
+        try {
+            fis.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        System.out.println(cnt);
+    }
+```
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -15205,6 +15549,245 @@ public void printLevel(int[][] m, int tR, int tC, int dR, int dC, boolean f){
 }
 ```
 
+找到无序数组中最小的k个数：c-p336
+给定一个无序的整型数组arr，找到其中最小的k个数
+如果数组arr长度为N，排序后自然可以得到最小的k个数，此时时间复杂度与排序的时间复杂度相同，均为O(NlogN)。本题要求读者实现时间复杂度为O(Nlogk)和O(N)的方法
+
+O(Nlogk):一直维护有k个数的大根堆，这个堆代表目前选出的k个最小的数，在堆里的k个元素中堆顶的元素是最小的k个数里最大的那个。接下来遍历整个数组，遍历的过程中看档期数是否比堆顶元素小，如果是，就把堆顶元素替换成档期的数，然后从堆顶的位置调整整个堆，让替换操作后堆的最大元素继续处在堆顶的位置；如果不是，则不进行任何操作，继续遍历下一个数；在遍历完成后，堆中的k个数就是所有数组中最小的k个数
+```java
+public int[] getMinKNumsByHeap(int[] arr, int k){
+    if(k<1 || k>arr.length){
+        return arr;
+    }
+    int[] kHeap = new int[k];
+    for(int i=0;i!=arr.length;i++){
+        if(arr[i]<kHeap[0]){
+            kHeap[0] = arr[i];
+            heapify(kHeap, 0, k);
+        }
+    }
+    return kHeap;
+}
+
+public void heapInsert(int[] arr, int value, int index){
+    arr[index] = value;
+    while(index!=0){
+        int parent = (index-1)/2;
+        if(arr[parent] < arr[index]){
+            swap(arr, parent, index);
+            index = parent;
+        }else{
+            break;
+        }
+    }
+}
+
+public void heapify(int[] arr, int index, int heapSize){
+    int left = index * 2+1;
+    int right = index * 2+2;
+    int largest = index;
+    while(left < heapSize){
+        if(arr[left] > arr[index]){
+            largest = left;
+        }
+        if(right < heapSize && arr[right] > arr[largest]){
+            largest = right;
+        }
+        if(largest!=index){
+            swap(arr, largest, index);
+        }else{
+            break;
+        }
+        index = largest;
+        left = index * 2+1;
+        right = index * 2+2;
+    }
+}
+
+public void swap(int[] arr, int index1, int index2){
+    int tmp = arr[index1];
+    arr[index1] = arr[index2];
+    arr[index2] = tmp;
+}
+
+
+```
+
+O(N)：BFPRT算法：在时间复杂度O(n)内，从无序的数组中找到第k小的数，显而易见的是，如果我们找到了第k小的数，那么想求arr中最小的k个数，就算再遍历一遍数组的而工作量而已。
+假设BFPRT算法的函数是int select(int[] arr, k)，该函数的功能为在arr中找到第k小的数，然后返回该数，select(arr, k)过程如下：
+1. 将arr中的n个元素划分成n/5组，每组5个元素，如果最后的组不够5个元素，那么最后剩下的元素为一组(n%5个元素)。
+2. 对每个组进行插入排序，只针对每个组最多五个元素之间的组内排序，组与组之间并不排序，排序后找到每个组的中位数，如果组的元素个数为偶数，则规定找到下中位数
+3. 步骤2中一共会找到n/5个中位数，让这些中位数组成一个新的数组，记为mArr，递归调用select(mArr, mArr.length/2),意义是找到mArr这个数组中的中位数，即mArr中第mArr.length/2小的数
+4. 假设步骤3中递归调用select(mArr, mArr.length/2)后，返回的数为x，根据这个x划分整个arr数组（partition过程），划分的过程为：在arr中，比x小的数都在x的左边，大于x的数都在x的右边，x在中间。假设划分完成后，x在arr中的位置记为i：
+5. 如果i==k，说明x为整个数组中第k小的数，直接返回
+   如果i< k,说明x处在第k小的数的左边，则应该在x的右边寻找第k小的数，所以递归调用select函数， 在左半区寻找第k小的数。
+   如果i>k,说明x处在第k小的数的右边，应该在x的左边寻找第k小的数，所以递归调用select函数，在右半区寻找第(i-k小的数)
+
+```java
+
+    public int[] getMinKNumsByBFPRT(int[] arr, int k){
+        if(k<1 || k > arr.length){
+            return arr;
+        }
+
+        //找到第k小的数
+        int minKth = getMinKthByBFPRT(arr, k);
+        int[] res = new int[k];
+        int index = 0;
+        //把所有小于minKth的数放入res中
+        for(int i=0;i!=arr.length;i++){
+            if(arr[i]<minKth){
+                res[index++] = arr[i];
+            }
+        }
+        //如果不够，则说明要填充这个数
+        for(; index!=res.length;index++){
+            res[index] = minKth;
+        }
+        return res;
+    }
+
+    public int getMinKthByBFPRT(int[] arr, int K){
+        //为了不修改原数组，在拷贝数组上操作
+        int[] copyArr = copyArray(arr);
+        return select(copyArr, 0, copyArr.length-1, K-1);
+    }
+
+    //拷贝数组
+    public int[] copyArray(int[] arr){
+        int[] res = new int[arr.length];
+        for(int i=0;i!=res.length;i++){
+            res[i] = arr[i];
+        }
+        return res;
+    }
+
+    //核心筛选函数
+    public int select(int[] arr, int begin, int end, int i){
+        if(begin == end){
+            return arr[begin];
+        }
+        //找到中间数字
+        int pivot = medianOfMedians(arr, begin, end);
+        //以这个数字为枢轴，对大于他和小于他的数进行左右分开，也就是说，枢轴会被放置到它应该在的位置上
+        int[] pivotRange = partition(arr, begin, end ,pivot);
+        //如果这个枢轴就是要找的数，直接返回
+        if(i>=pivotRange[0] && i<=pivotRange[1]){
+            return arr[i];
+        }else if(i<pivotRange[0]){ //如果i小于这个枢轴索引，说明i对应的数应该在前面，则继续筛选
+            return select(arr, begin, pivotRange[0]-1, i);
+        }else{  //如果i大于这个枢轴索引，说明i对应的数应该在后面，则继续筛选
+            return select(arr, pivotRange[1]+1, end, i);
+        }
+    }
+
+
+    public int medianOfMedians(int[] arr, int begin, int end){
+        //把整个数组5个5个分为一组
+        int num = end - begin + 1;
+        int offset = num % 5 ==0?0:1;
+        //mArr是所有小区间中中间数组成的新数组
+        int[] mArr = new int[num/5+offset];
+        for(int i=0;i<mArr.length;i++){
+            int beginI = begin+i*5;
+            int endI = beginI + 4;
+            //mArr[i]是这个小区间内排序后的中间数
+            mArr[i] = getMedian(arr, beginI, Math.min(end, endI));
+        }
+        //继续进行筛选，最终找出的是整个数组中最中间的数（但是却不用把整个数组进行排序）
+        return select(mArr, 0, mArr.length-1, mArr.length / 2);
+    }
+
+    //对数组进行划分，即找到枢轴值的位置，并且让该值左边都是小于他，右边都是大于他
+    public int[] partition(int[] arr, int begin, int end, int pivotValue){
+        int small = begin-1;
+        int cur = begin;
+        int big = end +1;
+        while(cur!=big){
+            if(arr[cur] < pivotValue){
+                swap(arr, ++small, cur++);
+            }else if(arr[cur] > pivotValue){
+                swap(arr, cur, --big);
+            }else{
+                cur++;
+            }
+        }
+        int[] range = new int[2];
+        range[0] = small + 1;
+        range[1] = big - 1;
+        return range;
+    }
+
+    //对arr进行插入排序，然后找到最中间的数，返回
+    public int getMedian(int[] arr, int begin, int end){
+        insertionSort(arr, begin, end);
+        int sum = end + begin;
+        int mid = (sum/2) + (sum % 2);
+        return arr[mid];
+    }
+
+    public void insertionSort(int[] arr, int begin, int end){
+        for(int i=begin+1; i!=end+1; i++){
+            for(int j=i;j!=begin;j--){
+                if(arr[j-1]>arr[j]){
+                    swap(arr, j-1, j);
+                }else{
+                    break;
+                }
+            }
+        }
+    }
+
+    public void swap(int[] arr, int index1, int index2){
+        int tmp = arr[index1];
+        arr[index1] = arr[index2];
+        arr[index2] = tmp;
+    }
+
+```
+
+需要排序的最短子数组长度：c-p342
+给定一个无序的数组arr，求出需要排序的最短子数组长度
+例如：arr=[1,5,3,4,2,6,7]返回4，因为只有[5,3,4,2]需要排序
+另外开一个数组进行排序，然后和新数组进行比较，时间复杂度tO(nlogn)+sO(n)
+
+时间复杂度O(n),额外空间复杂度O(1):
+初始化变量noMinIndex=-1,从右向左遍历，遍历的过程中记录右侧出现过的数的最小值，记为min，假设当前数为arr[i],如果arr[i]>min，说明如果要整体有序，min值必然会挪到arr[i]的左边，用noMinIndex记录最左边出现这种情况的位置，如果遍历完成后，noMinIndex仍然等于-1，说明从右到左始终不升序，原数组本来就有序，直接返回0，即完全不需要排序。
+    接下来从左向右遍历，遍历过程中记录左侧出现过的数的最大值，记为max，假设当前数为arr[i],如果arr[i]< max, 说明如果排序，max值必然会挪到arr[i]的右边，用变量noMaxIndex记录最右边出现这种情况的位置。
+
+遍历完成后，arr[noMinIndex...noMaxIndex]是真正需要排序的部分，返回它的长度即可。
+```java
+public int getMinLength(int[] arr){
+    if(arr==null||arr.length<2){
+        return 0;
+    }
+    int min = arr[arr.length-1];
+    int noMinIndex = -1;
+    for(int i=arr.length-2;i!=-1;i--){
+        if(arr[i]>min){
+            noMinIndex = i;
+        }else{
+            min = Math.min(min, arr[i]);
+        }
+    }
+
+    if(noMinIndex == -1)
+        return 0;
+
+    int max = arr[0];
+    int noMaxIndex = -1;
+    for(int i=1;i!=arr.length;i++){
+        if(arr[i]<max){
+            noMaxIndex = i;
+        }else{
+            max = Math.max(max, arr[i]);
+        }
+    }
+
+    return noMaxIndex - noMinIndex + 1;
+
+}
+```
 
 
 
@@ -15336,7 +15919,41 @@ d2. 共计9个苹果，有2只猴子，一个猴子每次拿2个苹果，一个�
     }
 ```
 
+d3.同时启动N个线程 交替打印1到N 打印3轮
+```java
 
+    public void printN(int n){
+        ArrayList<Thread> list = new ArrayList<>();
+        ArrayList<Semaphore> locks = new ArrayList<>();
+        Semaphore mutex = new Semaphore(0);
+        CountDownLatch latch = new CountDownLatch(1);
+        for(int i=1;i<=n;i++){
+            Thread t = new Thread(""+i){
+                @Override
+                public void run() {
+                    int cur = Integer.valueOf(getName());
+                    for(int i=0;i<3;i++){
+                        try {
+                            latch.await();
+                            locks.get(cur-1).acquire();
+                            System.out.println(cur);
+                            locks.get(cur%n).release();
+                        } catch (InterruptedException e) {
+
+                            e.printStackTrace();
+                        }
+                    }
+                }
+            };
+            t.start();
+            locks.add(new Semaphore(0));
+        }
+
+        latch.countDown();
+        locks.get(0).release();
+
+    }
+```
 
 
 
