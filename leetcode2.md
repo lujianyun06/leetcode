@@ -9381,8 +9381,87 @@ b50.统计一个文件有多少行
     }
 ```
 
+b51.自定义一个链表数据结构，并且两两翻转
+```java
 
+    public class Node{
+        Node next;
+        int val;
 
+    public Node(int val){
+            this.val = val;
+        }
+    }
+
+    public void flip(int[] arr){
+        Node dummy = new Node(-1);
+        Node cur = dummy;
+        for(int i=0;i<arr.length;i++){
+            cur.next = new Node(arr[i]);
+            cur = cur.next;
+        }
+
+        Node n1 = dummy.next;
+        Node n2 = dummy.next.next;
+        Node pre = dummy;
+        while(n1!=null && n2!=null){
+            Node tmp = n2.next;
+            n2.next=n1;
+            n1.next = tmp;
+            pre.next = n2;
+
+            if(n1.next!=null && n1.next.next!=null){
+                pre = n1;
+                n2 = n1.next.next;
+                n1 = n1.next;
+            }else{
+                break;
+            }
+        }
+
+        Node t = dummy.next;
+        boolean isFirst = true;
+        while(t!=null){
+            if(isFirst){
+                System.out.print(t.val);
+                isFirst = false;
+            }else{
+                System.out.print(","+t.val);
+            }
+            t = t.next;
+
+        }
+
+    }
+```
+
+b52.求两个相交链表的第一个交点
+```java
+    public class Node{
+        Node next;
+        int val;
+
+    public Node(int val){
+            this.val = val;
+        }
+    }
+
+    public Node test(Node list1, Node list2){
+        Node n1 = list1;
+        Node n2 = list2;
+        while(n1!=n2){
+            if(n1.next==null){
+                n1 = list2;
+            }
+            if(n2.next==null){
+                n2 = list1;
+            }
+            n1 = n1.next;
+            n2 = n2.next;
+        }
+        return n1;
+    }
+```
 
 
 
