@@ -15868,6 +15868,252 @@ public int getMinLength(int[] arr){
 }
 ```
 
+在数组中找到出现次数大于N/K的数：c-p343.1
+给定一个整型数组arr，打印其中出现次数大于一半的数，如果没有这样的数，打印提示信息
+用计数器cnt来表示当前出现次数最多的数的次数，tmp表示该数，如果有满足条件的数，那么最终tmp一定是该数，因为其他的数都能被抵消
+```java
+public void getMainNumber(int[] arr){
+    int tmp = arr[0];
+    int cnt = 1;
+    for(int i=1;i<arr.length;i++){
+        if(tmp==arr[i]){
+            cnt++;
+        }else{
+            if(cnt==1){
+                tmp = arr[i];
+            }else{
+                cnt--;
+            }
+        }
+    }
+
+    //验证
+    cnt = 0;
+    for(int i=0;i<arr.length;i++){
+        if(tmp==arr[i])
+            cnt++;
+    }
+    if(cnt>arr.length){
+        System.out.println(tmp);
+    }
+    else
+        System.out.println("no main number");
+
+}
+```
+
+给定一个整型数组arr， 再给定一个整数K，打印所有出现次数大于N/K的数，如果没有这样的数，打印这样的数
+出现次数大于N/K的数至多只有 K-1个（如果有K个，那么总数一定会多于N个）:c-p343.2
+摩尔投票法：
+一次在数组中删掉K个不同的数，不停地删除，直到剩下的数的种类不足K，那么，如果某些数在数组中出现次数大于N/K，则这些数最后一定会被生下来，具体过程如下：
+遍历到arr[i]，看arr[i]是否与已经被选出的某一个候选相同。
+如果与某一个候选相同，就把属于那个候选的点数统计+1
+如果与所有候选都不相同，先看当前的候选是否满了，K-1就是满，否则就是不满
+    如果不满，把arr[i]作为一个新的候选，属于它的点数初始化为1
+    如果已满，说明此时已经发现了K个不同的数，arr[i]就是第K个，此时把每一个候选各自的点数都-1，表示每个候选需要付出一个自己的点数，如果某些候选的点数在-1后等于0，则需要删除这些候选，候选又变成不满的状态。
+
+```java
+
+    public void findMainNumber2(int[] arr, int k) {
+        int[] res = new int[k];
+        //都初始化为第一个元素
+        for (int i = 0; i < k; i++) {
+            res[i] = arr[0];
+        }
+        int[] cnt = new int[k];
+
+        for (int i = 0; i < arr.length; i++) {
+            boolean flag1 = true;
+            boolean flag2 = true;
+            for (int j = 0; j < k; j++) {
+                if (res[j] == arr[i]) {
+                    cnt[j]++;
+                    flag1 = false;
+                    break;
+                }
+            }
+            if (flag1) {
+                for (int j = 0; j < k; j++) {
+                    if (cnt[j] == 0) {
+                        res[j] = arr[i];
+                        cnt[j] = 1;
+                        flag2 = false;
+                        break;
+                    }
+                }
+            }
+            if (flag1 && flag2) {
+                for (int j = 0; j < k; j++) {
+                    cnt[j]--;
+                }
+            }
+        }
+
+        //验证res中每个数是不是确实满足条件
+        int total = 0;
+        int t = arr.length / k;
+        for (int i = 0; i < k; i++) {
+            cnt[i] = 0;
+        }
+
+        for (int i = 0; i < k; i++) {
+            for (int j = 0; j < arr.length; j++) {
+                if (arr[j] == res[i]) {
+                    cnt[i]++;
+                }
+            }
+        }
+        for (int i = 0; i < k; i++) {
+            if (cnt[i] > t) {
+                total++;
+                if (i == 0)
+                    System.out.print(res[i]);
+                else
+                    System.out.print("," + res[i]);
+            }
+        }
+        if (total == 0) {
+            System.out.println("no main number");
+        }
+    }
+```
+
+扩展：这一种一次删掉K个不同的数的思想在面试中可能反复出现。例如：有一场投票，投票有效的条件是必须有一个候选人得票数超过半数，但是验票人员不能看到每张选票都选了谁，只能把任意两张选票放到一台机器上看这两张选票是否一样，若一样，则机器给出true的提醒，不一样则给出false的提醒，如果作为验票人员，如何判断投票是有效的？
+：”不能看到每张选票都选了谁” 实际上把用哈希表解题的可能性完全堵死了，但实现的方法只需要当前数和侯选数做比较，而不需要直到每个数的值
+
+
+在行列都排好序的矩阵中找数：c-p347
+给定一个N* M的整型矩阵matrix和一个整数K，matrix的每一行和每一列都是排好序的，实现一个函数判断K是否在matrix中
+很显然，从右上角开始，小了往下，大了往左即可。
+
+```java
+public boolean isExist(int[][] matrix, int k){
+    int n = matrix.length;
+    int m = matrix[0].length;
+
+    int row = 0;
+    int col = m-1;
+    while(row<n && col >=0 ){
+        if(matrix[row][col]==k){
+            return true;
+        }else if(matrix[row][col]>k){
+            col--;
+        }else{
+            row++;
+        }
+    }
+    return false;
+}
+```
+
+最长的可整合子数组的长度：c-p349
+先给出可整合数组的定义。如果一个数组在排序之后，每相邻两个数差的绝对值都为1，则该数组为可整合数组。
+例如：[5,3,4,6,2]排序之后为[2,3,4,5,6],符合每相邻两个数差的绝对值都为1，所以这个数组为可整合数组。
+给定一个整型数组arr，请返回其中最大可整合子数组的长度，例如[5,5,3,2,6,4,3]的最大可整合子数组为[5,3,2,6,4]，所以请返回5
+先排序，然后顺着遍历，用一个res来表示当前遍历到的可整合子数组的最大长度，用一个tmp来表示当前遍历的可整合子数组的长度。
+如果当前数和前一个数差1，说明可以并到一个子数组中，tmp++
+如果当前数和前一个数一样，则直接跳到下一个数
+否则，res=max(res, tmp) tmp=1, 然后继续
+
+```java
+    public int maxSubarrLen(int[] ori){
+        if(ori==null || ori.length==0) return 0;
+        int[] arr = new int[ori.length];
+        System.arraycopy(ori, 0, arr, 0, ori.length);
+        Arrays.sort(arr);
+        int res = 1;
+        int tmp = 1;
+        for(int i=1;i<arr.length;i++){
+            if(arr[i]==arr[i-1]+1){
+                tmp++;
+            }else if(arr[i]-1>arr[i-1]){
+                tmp = 1;
+            }
+            res = Math.max(res, tmp);
+        }
+        return res;
+    }
+
+```
+
+不重复打印排序数组中相加和为给定值的所有二元组和三元组：c-p351
+给定排序数组arr和整数k，不重复打印arr中所有相加和为k的不降序二元组。
+例如，arr=[-8,-4,-3,0,1,2,4,5,8,9],k=10,打印结果为：
+1,9
+2,8
+
+1.利用双指针法，设置遍历left=0和right=length-1
+2.比较arr[left]+arr[right]的值(sum)与k的大小
+    如果sum等于k，打印arr[left],arr[right], left++,right--.
+    如果sum大于k，right--
+    如果sum小于k，left++
+3.如果left< right,则一直重复步骤2，否则过程结束
+为了保证不重复打印，只需在打印前增加一个检查：arr[left]是否与它前一个值相等，如果相等就不打印
+解释：因为整体过程是两头向中间压缩的过程，如果arr[left]+arr[right]=k,又有arr[left]==arr[left-1],那么之前一定打印过这个二元组，则不用再重复打印
+时间复杂度O(N)
+```java
+public void printUniquePair(int[] arr, int k){
+    if(arr==null || arr.length<2){
+        return;
+    }
+    int left = 0;
+    int right = arr.length-1;
+    while(left<right){
+        if(arr[left]+arr[right]<k){
+            left++;
+        }else if(arr[left]+arr[right]>k){
+            right--;
+        }else{
+            if(left==0 || arr[left-1]!=arr[left]){
+                System.out.println(arr[left]+","+arr[right]);
+            }
+            left++;
+            right--;
+        }
+    }
+}
+```
+三元组的问题类似于二元组的求解过程：
+例如 arr=[-8,-4,-3,0,1,2,4,5,8,9] k=10
+当三元组的第一个值为-8时，寻找-8后面的子数组中所有相加为18的不重复二元组
+当三元组的第一个值为-4时，寻找-4后面的子数组中所有相加为14的不重复二元组
+当三元组的第一个值为-3时，寻找-3后面的子数组中所有相加为13的不重复二元组
+依次类推：
+如果不重复打印？首先保证每次寻找过程开始前，选定的三元组中第一个值不重复，其次就是原问题的打印检查一样，保证不重复打印二元组
+时间复杂度为O(n^2)
+```java
+public void printUniqueTriad(int[] arr, int k){
+    if(arr==null || arr.length<2){
+        return;
+    }
+    for(int i=0;i<arr.length-2;i++){
+        if(i==0 || arr[i]!=arr[i-1]){
+            printRest(arr, i, i+1, arr.length-1, k-arr[i]);
+        }
+    }
+}
+
+public void printRest(int[] arr, int f, int l, int r, int k){
+    while(l<r){
+        if(arr[l]+arr[r]<k){
+            l++;
+        }else if(arr[l]+arr[r]>k){
+            r--;
+        }else{
+            if(l==f+1 || arr[l-1]!=arr[l]){
+                System.out.println(arr[f]+","+arr[l]+","+arr[r]);
+            }
+            l++;
+            r--;
+        }
+    }
+}
+```
+
+
+
+
+
 
 
 
