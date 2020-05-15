@@ -16150,11 +16150,498 @@ public int getMaxLength(int[] arr, int k){
 }
 ```
 
+未排序数组中累加和为给定值的最长子数组系列问题：c-p355.1
+给定一个无序数组arr，其中元素可正可负可0，给定一个整数k，求arr所有子数组累加和为k的最长子数组长度
+
+s(i)代表子数组arr[0..i]所有元素的累加和，那么子数组arr[j..i]（0<=j<=i< arr.length）的累加和为s(i)-s(j-1),解法：
+1.设置变量sum=0,表示从0位置开始一直加到i位置所有元素的和，设置变量len=0，表示累加和为k的最长子数组长度，设置哈希表map，key表示从arr最左边开始累加过程中出现过的sum值，对应的value值则表示sum值最早出现的位置。
+2.从左到右开始遍历，遍历的当前元素为arr[i].
+    1) 令sum=sum+arr[i],即之前所有元素的累加和s(i)，在map中查看是否存在sum-k.
+        》如果sum-k存在，从map中取出sum-k对应的value值，记为j，j代表从左到右不断累积啊的过程中第一次出现sum-k这个累加和的位置。根据之前的结论，arr[j+1..i]的累加和为s(i)-s(j)，此时s(i)=sum，又有s(j)=sum-k,所以arr[j+1..i]的累加和为k，同时因为map中只记录每一个累加和最早出现的位置，所以此时的arr[j+1..i]是必须以arr[i]结尾的所有子数组中，最长的累加和为k的子数组，如果该子数组的长度大于len，就更新len。
+        》如果sum-k不存在，说明在必须以arr[i]结尾的情况下没有累加和为k的子数组。
+    2）检查当前的sum(即s(i))是否在map中，如果不存在，说明此时的sum值是第一次出现
+3.继续遍历下一个元素，直到所有元素都遍历完。
+
+大体上过程如下，但还有很重要的问题，根据arr[j+1..i]的累加和为s(i)-s(j).如果从0位置开始累加，会导致j+1>=1，即所有从0位置开始的子数组都没考虑过，所有应该从-1这个位置开始累加，也就是遍历前先把(0,-1)这个记录放进map，这个记录的意义是如果任何一个数也不加时，累加和为0，这样，从0位置开始的子数组就被我们考虑到了。
+
+
+```java
+public int maxLen(int[] arr, int k){
+    if(arr==null || arr.length==0){
+        return 0;
+    }
+    HashMap<Integer, Integer> map = new HashMap<>();
+    map.put(0,-1)
+    int sum = 0;
+    int len = 0;
+    for(int i=0;i<arr.length;i++){
+        sum += arr[i];
+        if(map.containsKey(sum-k)){
+            len = Math.max(i-map.get(sum-k), len);
+        }
+        if(!map.containsKey(sum)){
+            map.put(sum, i);
+        }
+    }
+    return len;
+}
+```
 
 
 
+给定一个无序数组arr，其中元素可正可负可0，求arr中所有的子数组中正数与负数个数相等的最长子数组长度：c-p355.2
+》方法一：
+    如果遍历到arr[i],0到i中的正数为x个，负数为y个，若0到j中的正数为x1个，负数为y1个。假设arr[j+1..i]之间的正数与负数相等。则有x-x1=y-y1，故有x-y=x1-y1。因此如果遍历到arr[i]处，找到最前面也满足正数-负数=x-y的位置即可。
+    因此，用一个HashMap，key为x-y，value为第一次出现该key的位置，遍历到arr[i]，如果map中有x-y，则len=max（i-map.get(x-y), len）如果没有key，则说明是第一次出现key，则把key和i放入map中
+
+》方法二：
+    用第一道题的方法，先把数组arr中的正数全变成1，负数全变成-1，0不变，然后求累加和为0的最长子数组长度即可。
+
+```java
+public int maxLen2(int[] arr){
+    int pos = 0;  //正数个数
+    int nag = 0;  //负数个数
+    int len = 0;
+    HashMap<Integer, Integer> map = new HashMap<>();
+    map.put(0, -1); //没有数字时，看作正负个数相等，位置为-1
+    for(int i=0;i<arr.length;i++){
+        if(arr[i]>0) pos++;
+        else if(arr[i]<0) nag++;
+        if(map.containsKey(pos-nag)){
+            len = Math.max(i-map.get(pos-nag), len);
+        }else{
+            map.put(pos-nag, i);
+        }
+    }
+    return len;
+}
+```
+
+给定一个无序数组arr，其中元素只是1或0，求arr所有子数组中0和1个数相等的最长子数组长度。：c-p355.3
+》方法一：
+    核心思想和上题一样，只不过把记录正负换成记录1和0
+》方法二：
+    用第一道题的方法，先把数组arr中的0全变成-1，1不变，然后求累加和为0的最长子数组长度即可。
+
+```java
+public int maxLen3(int[] arr){
+    int one = 0;  //正数个数
+    int zero = 0;  //负数个数
+    int len = 0;
+    HashMap<Integer, Integer> map = new HashMap<>();
+    map.put(0, -1); //没有数字时，看作1和0个数相等，位置为-1
+    for(int i=0;i<arr.length;i++){
+        if(arr[i]==1) one++;
+        else zero++;
+        if(map.containsKey(one-zero)){
+            len = Math.max(i-map.get(one-zero), len);
+        }else{
+            map.put(one-zero, i);
+        }
+    }
+    return len;
+}
+```
+
+未排序数组中累加和小于或等于给定值的最长子数组长度：c-p358
+给定一个无序数组arr，其中元素可正可负可0，给定一个整数k，求arr所有子数组中累加和小于或等于k的最长子数组长度。
+例如：arr=[3,-2,-4,0,6], k=-2，相加和小于或等于-2的最长子数组为3,-2,-4,0 所以结果返回4
+依次求以数组的每个位置结尾的，累加和小于或等于k的最长子数组长度，其中最长的那个子数组长度就是我们要的结果。
+
+假如处理到位置30，从位置0到位置30的累加和是100（sum[0..30]=100）,现在想求以位置30结尾的、累加和小于或等于10的最长子数组长度。再假设从位置0开始累加到位置10的时候，累加和第一次大于或等于90(sum[0..10]>=90)，那么可以知道以位置30结尾的相加和小于或等于10的最长子数组就是arr[11..30]。也就是说，如果从0位置到j位置的累加和为sum[0..j]，此时想求以j位置结尾的相加和小于或等于k的最长子数组长度。那么只要知道大于或等于sum[0..j]-k这个值的累加和最早出现在j之前的什么位置就可以，假设那个位置是i位置，那么arr[i+1..j]就是j位置结尾的相加和小于或等于k的最长数组。
+
+由于不是具体值，而是范围值，所以不能直接用hashmap，为了方便地找到大于或等于某一个值的累加和最早出现的位置，可以按照如下方法生成辅助数组helpArr。
+    1.首先生成arr每个位置从左到右的累加和数组sumArr。以[1,2,-1,5,-2]为例，生成的sumArr=[0,1,3,2,7,5]。注意，sumArr中第一个数为0，表示当没有任何一个数时的累加和为0.
+    2.生成sumArr的左侧最大值数组helpArr，sumArr={0,1,3,2,7,5} -> {0,1,3,3,7,7}。因为我们只关心大于或等于某个值的累加和最早出现的位置，而累加和3出现在2之前，并且大于或等于3必然大于2，所以当前要保留一个更大的、出现更早的累加和。
+    3.helpArr是sumArr每个位置上的左侧最大值数组，那么它当然是有序的，在这样一个有序的数组中，就可以二分查找大于或等于某一个值的累加和最早出现的位置。例如，在[0,1,3,3,7,7]中查找大于或等于4这个值的位置，就是第一个7的位置
+
+```java
+public int maxLength(){
+    int[] h = new int[arr.length+1];
+    int sum = 0;
+    h[0] = sum;
+    for(int i=0;i!=arr.length;i++){
+        sum += arr[i];
+        h[i+1] = Math.max(sum, h[i]);
+    }
+    sum = 0;
+    int res = 0;
+    int pre = 0;
+    int len = 0;
+    for(int i=0;i!=arr.length;i++){
+        sum+=arr[i];
+        pre = getLessIndex(h, sum-k);
+        len = pre == -1?0:i-pre+1;
+        res = Math.max(res, len);
+    }
+    return res;
+}
 
 
+public int getLessIndex(int[] arr, int num){
+    int low = 0;
+    int high = arr.length-1;
+    int mid = 0;
+    int res = -1;
+    while(low<=high){
+        mid = (low+high)>>1;
+        if(arr[mid]>=num){
+            res = mid;
+            high = mid -1;
+        }else{
+            low = mid+1;
+        }
+    }
+    return res;
+}
+
+```
+
+计算数组的小和：c-p361
+数组的小和定义如下：例如数组s={1,3,5,2,4,6}.在s[0]的左边小于或等于s[0]的数的和为0，在s[1]左边小于或等于s[1]的数的和为1，s[2]左边小于或等于s[2]的数的和为1+3=4，s[3]左边小于或等于s[3]的数的和为1，s[4]左边小于或等于s[4]的数的和为1+3+2=6，s[5]左边小于或等于s[5]的数的和为1+3+5+2+4=15，所以s的小和为0+1+4+1+6+15=27。给定一个数组s，求s的小和。
+显然O(N^2)的复杂度相当简单，考虑用空间换时间
+下面介绍时间复杂度O(NlogN),额外空间复杂度O(N)的方法，这是一种在归并排序过程中，利用组间再进行合并时产生小和的过程。
+1.假设左组为l[], 右组为r[]，左右两个组的组内都已经有序，现在要利用外排序合并成一个大组，并假设当前的外排序是l[i]和r[j]在进行比较。
+2.如果l[i]<=r[j],那么产生小和。假设从r[j]往右一直到r[]结束，元素的个数为m，那么产生的小和为l[i]* m （只要r[j]大于l[i], 那么r[j]后面的数一定都大于l[i]）
+3.如果l[i]>r[j],不产生任何小和
+4.整个归并排序的过程该怎么进行就怎么进行，排序过程没有任何变化，只是利用步骤1到步骤3，也就是组间合并的过程中累加所有产生的小和，总共累加和就是结果。
+
+```java
+public int getSmallSum(int[] arr){
+    if(arr==null || arr.length==0){
+        return 0;
+    }
+    return func(arr, 0, arr.length-1);
+}
+
+public int func(int[] s, int l, int r){
+    if(l==r){
+        return 0;
+    }
+    int mid = (l+r)>>1;
+    return func(s, l, mid) + func(s, mid+1, r) + merge(s, l, mid, r);
+}
+
+public int merge(int[] s, int left, int mid, int right){
+    int[] h = new int[right-left+1];
+    int hi = 0;
+    int i=left;
+    int j = mid+1;
+    int smallSum =0;
+    while(i<=mid && j<=right){
+        if(s[i]<=s[j]){
+            smallSum += s[i]*(right-j+1);
+            h[hi++] = s[i++];
+        }else{
+            h[hi++]=s[j++];
+        }
+    }
+
+    for(;(j<right+1) || (i < mid+1); j++,i++){
+        h[hi++] = i>mid?s[j]:s[i];
+    }
+    for(int k=0;k!=h.length;k++){
+        s[left++] = h[k];
+    }
+    return smallSum;
+}
+
+```
+
+自然数数组的排序：c-p364
+给定一个长度为N的整型数组arr，其中有N个互不相等的自然数1到N，请实现arr的排序，
+但是不要把下标0-N-1位置上的数通过直接赋值的方式替换成1到N，要求tO(N)+sO(1)
+
+方法一：
+1. 从左到右遍历arr，假设当前遍历到i位置
+2. 如果arr[i]==i+1,说明当前的位置不需要调整，继续遍历下一个位置
+3. 如果arr[i]!=i+1,说明此时i位置的数不应该放在i位置上，接下来进行跳的过程
+    比如[1,2,5,3,4]，假设遍历到位置2，也就是数字5，5应该放在位置4上，把5放过去，数组变成[1,2,5,3,5]。同时，4这个数是被5替换下来的数，应该放在位置3，所以把4放过去，数组变成[1,2,5,4,5].同时，3这个数是被4替下来的数，应该放在位置2，所以继续把3放过去，数组变成[1,2,3,4,5]。当跳了一圈回到原位置后，会发现此时arr[i]==i+1,继续遍历下一个位置。
+
+```java
+    public void sort(int[] arr){
+        int n = arr.length;
+        int tmp = 0;
+        int next = 0;
+        for(int i=0;i<n;i++){
+            if(arr[i]!=i+1){
+                tmp = arr[i];
+                do{
+                    next = arr[tmp-1];
+                    arr[tmp-1]=tmp;
+                    tmp = next;
+                }while(arr[i]!=i+1);
+            }
+        }
+    }
+```
+方法二：内圈循环直到合适
+
+while(arr[index] != index+1 )
+arr[index] swap arr[arr[index]-1]
+```java
+    public void sort(int[] arr){
+        int n = arr.length;
+        for(int i=0;i<n;i++){
+            if(arr[i]!=i+1){
+                while(arr[i]!=i+1){
+                    int tmp = arr[arr[i]-1];
+                    arr[arr[i]-1] = arr[i];
+                    arr[i] = tmp;
+                }
+            }
+        }
+    }
+```
+
+奇数下标都是奇数或者偶数下标都是偶数：c-p366
+给定一个长度不小于2的数组arr，实现一个函数调整arr，要么让所有偶数下标都是偶数，要么让所有奇数下标都是奇数，要求时间复杂度O(N), 空间复杂度O(1)
+
+首先遍历一遍数组，看奇数和偶数的个数，如果奇数个数多，则能保证奇数位都是奇数，否则能保证偶数位都是偶数
+
+假如奇数多，用p1表示当前在偶数位的奇数
+遍历arr，假设当前遍历到的位置索引为i
+如果i是奇数位，且当前是奇数，继续遍历
+如果i是奇数位，且当前是偶数，则 arr[i] swap arr[p1], p1+2直到再次是奇数
+每次换完后，p1从当前位置继续往下走
+```java
+    public void modify(int[] arr){
+        int n = arr.length;
+        int odd = 0;
+        int even = 0;
+        for(int e: arr){
+            if((e&1)==0){
+                even++;
+            }else
+                odd++;
+        }
+        boolean useOdd = odd>even;
+        int p1 = 0;
+        //为了避免使用奇数和偶数用到的代码重复写，所以用这个标志位来进行奇偶不同情况的使用
+        int targetFlag = useOdd?1:0;
+        int reFlag = useOdd?0:1;
+
+
+        while(p1<n){
+            if((p1&1)==reFlag && ((arr[p1])&1)==targetFlag)
+                break;
+            p1++;
+        }
+
+        for(int i=1;i<n;i+=2){
+            if((arr[i]&1)==reFlag){
+                int tmp = arr[p1];
+                arr[p1] = arr[i];
+                arr[i] = tmp;
+                //找到下一个偶数位上的奇数 (或奇数位上的偶数)
+                while(p1<n){
+                    if((arr[p1]&1)==targetFlag)
+                        break;
+                    p1+=2;
+                }
+            }
+        }
+    }
+```
+
+子数组累加最大和问题：c-p367
+给定一个数组arr，返回子数组的最大累加和
+例如，arr=[1,-2,3,5,-2,6,-1]所有子数组中，[3,5,-2,6]可以累加出最大和12，所以返回12
+累加到arr[i]时，前面和为sum，如果arr[i]+sum>arr[i], 则说明能起到累加作用，否则，还不如从当前arr[i]重新算起
+```java
+    public int maxSum(int[] arr){
+        if(arr==null || arr.length==0)
+            return 0;
+        int sum = arr[0];
+        int res = sum;
+        for(int i=1;i<arr.length;i++){
+            if(arr[i]+sum>arr[i]){
+                sum += arr[i];
+            }else
+                sum = arr[i];
+            res = Math.max(sum, res);
+        }
+        return res;
+    }
+```
+
+子矩阵的最大累加和问题：c-p368
+给定一个矩阵matrix，其中的值有正有负有0，返回子矩阵的最大累加和
+例如，矩阵matrix为：
+-90 48   78
+64  -40  64
+-81 -7   66
+其中，最大累加和的子矩阵为：
+48 78
+-40 64
+-7 66
+所以返回累加和209
+
+例如，matrix为：
+-1 -1 -1
+1 2 2
+-1 -1 -1
+其中最大累加和的子矩阵为
+2 2
+所以返回累加和为4
+
+假设一个2行4列的矩阵如下：
+-2 3 -5 7
+1 4 -1 -3
+
+可以先把两行元素累加，然后得到累加数组[-1,7,-6,4],接下来求这个累加数组的最大累加和，结果是7.也就说，必须含有2行元素的子矩阵的最大和为7，且这个子矩阵是
+3
+4
+也就是说，如果一个矩阵共有k行且限定必须有k行元素的情况下，我们只要把矩阵中每一列的k个元素累加生成一个累加数组，然后求出这个数组的最大累加和，这个最大累加和就是必须含有k行元素的子矩阵中的最大累加和
+
+利用题目的第一个例子来讲述：
+首先考虑只有一行的矩阵[-90.48,78],因为只有一行，所以累加数组arr就是[-90.48.78]这个数组的最大累加和为126
+
+接下来考虑含两行的矩阵
+-90 48   78
+64  -40  64
+这个矩阵的累加数组就是上一步的累加数组[-90.48,78]的基础上，依次在每个位置上加上矩阵最新一行[64,-40,64]的结果，即[-26,8,142]，这个数组的最大累加和为150.
+
+接下来考虑含有3行的矩阵：
+-90 48   78
+64  -40  64
+-81 -7   66
+这个矩阵的累加数组就是上一步累加数组[-26,8,142]的基础上，依次在每个位置上加上矩阵的最新一行[-81 -7   66]的结果，即[-107,1,208]，这个数组的最大累加和为209。此时，必须从矩阵第一行元素开始，并往下的所有子矩阵都已查找完毕，接下来从矩阵的第二行开始，继续这样的过程。。。
+
+整个过程中最关键的地方有两处：
+* 用求累加数组的最大累加和的方式得到每一步的最大子矩阵的累加和
+* 每一步的累加数组可以利用前一步求出的累加数组很方便的得到
+由于求一个数组的最大子数组累加和时间复杂度为O(N),所以如果矩阵大小为N&times;N，则全部过程的时间复杂度为O(N^3)
+
+```java
+
+    public int maxSum(int[][] m){
+        if(m==null || m.length==0 || m[0].length==0)
+            return 0;
+        int col = m[0].length;
+        int[] sumArr = new int[col];
+        int res = Integer.MIN_VALUE;
+        for(int i=0;i<m.length;i++){
+            Arrays.fill(sumArr, 0);
+            for(int j=i;j<m.length;j++){
+                for(int k=0;k<col;k++){
+                    sumArr[k] += m[j][k];
+                }
+                res = Math.max(res, maxSum(sumArr));
+            }
+        }
+        return res;
+    }
+
+    //求子数组累加最大和
+    public int maxSum(int[] arr){
+        if(arr==null || arr.length==0)
+            return 0;
+        int sum = arr[0];
+        int res = sum;
+        for(int i=1;i<arr.length;i++){
+            if(arr[i]+sum>arr[i]){
+                sum += arr[i];
+            }else
+                sum = arr[i];
+            res = Math.max(sum, res);
+        }
+        return res;
+    }
+```
+
+在数组中找到一个局部最小的位置：c-p371
+定义局部最小的概念。arr长度为1时，arr[0]是局部最小。arr的长度为N(N>1)时，如果arr[0]< arr[1],那么arr[0]是局部最小；如果arr[N-1]< arr[N-2]，那么arr[N-1]是局部最小；如果0< i< N-1,既有arr[i] < arr[i-1], 又有arr[i] < arr[i+1]，那么arr[i]是局部最小
+
+》方法一 O(N)：
+给定无序数组arr，已知arr中任意两个相邻的数都不相等，写一个函数，只需返回arr中任意一个局部最小出现的位置即可。
+
+先判断长度，如果是1直接返回首元素，如果是2返回两个元素中更小的，如果大等于3，则遍历位置1到n-2，如果满足左右都比它大，则返回
+```java
+public int getLessIndex(int[] arr){
+    if(arr==null || arr.length==0)
+        return -1;
+    int len = arr.length;
+    if(len==1) return 0;
+    if(len==2) return arr[0]<arr[1]?0:1;
+    if(arr[0]<arr[1]) return 0;
+    if(arr[len-1]<arr[len-2]) return len-1;
+    for(int i=1;i<len-1;i++){
+        if(arr[i-1]>arr[i] && arr[i]<arr[i+1])
+            return i;
+    }
+    return -1;
+}
+```
+
+》方法二：上面方法是tO(N),下面用二分来做到tO(logN)
+1. 如果arr为空或者长度为0，返回-1表示不存在局部最小
+2. 如果arr长度为1或者arr[0]< arr[1], 返回0
+3. 如果arr[n-1]< arr[n-2]，说明arr[n-1]是局部最小，返回n-1
+4. 如果arr长度大于2且arr左右两头都不是局部最小,则令left=1， right=n-2，然后进入步骤5做二分查找
+5. 令mid = （left+right）/2，然后进行如下判断
+    1）如果arr[mid]>arr[mid-1],可知在arr[left...mid-1]上肯定存在局部最小，令right=mid-1，重复步骤5
+    2）如果不满足1），但arr[mid]>arr[mid+1],可知在arr[mid+1...right]上肯定存在局部最小，令left=mid+1，重复步骤5.
+    3）如果1）和2）都不满足，那么arr[mid]就是局部最小，直接返回mid
+6. 步骤5一直进行二分查找，直到left==right时停止，返回left即可。
+
+*如此可见，二分查找并不是只有数组有序时才能使用，只要能确定二分两侧的某一侧肯定存在你要找的内容，就可以使用二分查找*
+
+```java
+public int getLessIndex(int[] arr){
+    if(arr==null || arr.length==0){
+        return -1;
+    }
+    if(arr.length==1 || arr[0]<arr[1]){
+        return 0;
+    }
+    if(arr[arr.length-1]<arr[arr.length-2]){
+        return arr.length-1;
+    }
+    int left = 1;
+    int right = arr.length-2;
+    int mid = 0;
+    while(left<right){
+        mid = (left+right)>>1;
+        if(arr[mid]>arr[mid-1]){
+            right=mid-1;
+        }else if(arr[mid]>arr[mid+1]){
+            left = mid+1;
+        }else{
+            return mid;
+        }
+    }
+    return left;
+}
+```
+
+数组中子数组的最大类乘积：c-p373
+给定一个double类型的数组arr，其中的元素可正可负可0，返回子数组累乘的最大乘积，例如arr=[-2.5,4,0,3,0.5,8,-1],子数组[3,0,5,8]累乘可获得最大乘积12，所以返回12.
+
+做到时间复杂度O(N),额外空间复杂度O(1)。所有的子数组都会以某一个位置结束，所以，如果求出以每一个位置结尾的子数组最大的累乘积，在这么多最大累乘积中最大的那个就说最终的结果。也就是说，结果=max{以arr[0]结尾的所有子数组最大累乘积，以arr[1]结尾的所有子数组最大累乘积，。。。以arr[n-1]结尾的所有子数组最大累乘积，}
+
+假设以arr[i-1]结尾的最小累乘积为min，以arr[i-1]结尾的最大累乘积为max，那么以arr[i]结尾的最大累乘积只有以下三种可能
+* 可能是max&times;arr[i].max既然表示以arr[i-1]结尾的最大累乘积，那么当然有可能以arr[i]结尾的最大累乘积max&times;arr[i]。例如，[3,4,5]在算到5的时候
+* 可能是min&times;arr[i]。min既然表示以arr[i-1]结尾的最小累乘积，当然有可能min是负数，而如果arr[i]也是负数，两个负数相乘的结果也可能很大。例如，[-2,3,-4]算到-4的时候
+* 这三个可能的值中最大的那个就作为以i结尾的最大累乘积，最小的作为最小累乘积，然后继续计算以i+1位置结尾的时候，如此重复直到计算结束。
+
+```java
+public double maxProduct(double[] arr){
+    if(arr==null || arr.length==0)
+        return 0;
+    double max = arr[0];
+    double min = arr[0];
+    double res = arr[0];
+    for(int i=1;i<arr.length;i++){
+        int t1 = max*arr[i];
+        int t2 = min*arr[i];
+        max = Math.max(Math.max(t1,t2), arr[i]);
+        min = Math.min(Math.min(t1,t2), arr[i]);
+        res = Math.max(res, max);
+    }
+    return res;
+}
+```
 
 
 
